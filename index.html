@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SIX | UNMUTE</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --neon-blue: #00f3ff;
+            --neon-pink: #ff00ff;
+            --bg-dark: #0b0b14;
+            --card-bg: rgba(255, 255, 255, 0.05);
+            --glass: rgba(20, 20, 30, 0.6);
+        }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        
+        body {
+            margin: 0; padding: 0;
+            background-color: var(--bg-dark);
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(0, 243, 255, 0.1) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(255, 0, 255, 0.1) 0%, transparent 40%);
+            color: white;
+            font-family: 'Montserrat', sans-serif;
+            height: 100vh; overflow: hidden;
+            display: flex; flex-direction: column;
+        }
+
+        .screen { 
+            display: none; /* Полностью убираем со страницы */
+            height: 100%; 
+            flex-direction: column; 
+        }
+        .screen.active { 
+            display: flex; /* Показываем только активный */
+        }
+
+        /* --- ЛОББИ --- */
+        .lobby-container {
+            flex-grow: 1; display: flex; flex-direction: column;
+            justify-content: center; align-items: center; text-align: center;
+            padding: 20px;
+        }
+        .logo { font-size: 60px; font-weight: 900; letter-spacing: -2px; margin-bottom: 10px; text-shadow: 0 0 20px var(--neon-pink); }
+        .online-tag { background: rgba(0, 255, 136, 0.1); color: #00ff88; padding: 6px 12px; border-radius: 20px; font-size: 12px; border: 1px solid rgba(0, 255, 136, 0.2); }
+        
+        .big-btn {
+            background: linear-gradient(135deg, #ff0055, #ff00aa);
+            width: 200px; height: 200px;
+            border-radius: 50%; border: none;
+            color: white; font-size: 28px; font-weight: 900;
+            box-shadow: 0 0 40px rgba(255, 0, 85, 0.4);
+            cursor: pointer; margin-top: 40px;
+            transition: transform 0.1s;
+            display: flex; align-items: center; justify-content: center;
+            animation: pulse-btn 2s infinite;
+            
+            /* 👇 МАГИЯ, КОТОРАЯ ЧИНИТ КЛИК 👇 */
+            position: relative; 
+            z-index: 9999; /* Самый верхний слой, выше всего */
+            pointer-events: auto; /* Принудительно разрешаем клики */
+        }
+        @keyframes pulse-btn { 0% { transform: scale(1); } 50% { transform: scale(1.05); box-shadow: 0 0 60px rgba(255, 0, 85, 0.6); } 100% { transform: scale(1); } }
+        .big-btn:active { transform: scale(0.95); animation: none; }
+
+        /* --- ПОИСК --- */
+        .search-wrapper { flex-grow: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .radar { width: 100px; height: 100px; border: 4px solid var(--neon-blue); border-radius: 50%; border-top-color: transparent; animation: spin 1s linear infinite; margin-bottom: 20px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* --- ИГРОВОЙ СТОЛ (НОВЫЙ ДИЗАЙН) --- */
+        .game-header {
+            padding: 15px 20px;
+            display: flex; justify-content: space-between; align-items: center;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent);
+        }
+        .timer-badge {
+            font-size: 24px; font-weight: 900; color: white;
+            text-shadow: 0 0 10px var(--neon-blue);
+            font-variant-numeric: tabular-nums;
+        }
+        
+        /* Сетка стола 3x2 (Две колонки) */
+        .table-grid {
+            flex-grow: 1;
+            display: grid;
+            grid-template-columns: 1fr 1fr; /* Две равные колонки */
+            gap: 15px;
+            padding: 10px 20px;
+            align-content: center; /* Центрируем по вертикали */
+        }
+
+        .player-card {
+            display: flex; flex-direction: column; align-items: center;
+            position: relative; transition: transform 0.2s;
+        }
+        .player-card:active { transform: scale(0.95); }
+
+        .avatar-wrapper {
+            width: 80px; height: 80px;
+            position: relative;
+            margin-bottom: 8px;
+        }
+        .avatar {
+            width: 100%; height: 100%;
+            border-radius: 50%;
+            background-color: #222; background-size: cover; background-position: center;
+            border: 3px solid #333;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+        }
+        
+        /* Цвета команд */
+        .team-left .avatar { border-color: var(--neon-pink); }
+        .team-right .avatar { border-color: var(--neon-blue); }
+
+        .p-name {
+            font-size: 12px; font-weight: 700;
+            background: rgba(0,0,0,0.6); padding: 4px 8px; border-radius: 10px;
+            max-width: 80px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+
+        /* Блюр */
+        .blurred { filter: blur(10px); transition: filter 1s ease; }
+        .unblurred { filter: blur(0px) !important; }
+
+        /* Вопрос по центру */
+        .question-overlay {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 90%;
+            background: rgba(15, 15, 25, 0.95);
+            border: 1px solid var(--neon-blue);
+            box-shadow: 0 0 30px rgba(0, 243, 255, 0.2);
+            padding: 20px; border-radius: 20px;
+            text-align: center; z-index: 50;
+            transition: opacity 0.3s;
+        }
+        .q-label { color: var(--neon-blue); font-size: 10px; letter-spacing: 2px; font-weight: bold; margin-bottom: 10px; }
+        .q-text { font-size: 16px; line-height: 1.4; font-weight: 600; }
+
+        /* ГОЛОСОВАНИЕ */
+        .vote-layer {
+            position: absolute; inset: 0;
+            background: rgba(0,0,0,0.9);
+            z-index: 90;
+            display: none; flex-direction: column; justify-content: space-between;
+            padding: 40px 20px;
+            backdrop-filter: blur(8px);
+        }
+        .vote-header { text-align: center; }
+        .vote-title { font-size: 28px; font-weight: 900; color: white; margin-bottom: 10px; }
+        .vote-sub { color: #aaa; font-size: 14px; }
+        
+        .skip-btn {
+            background: transparent; border: 2px solid #444; color: #888;
+            padding: 15px; border-radius: 15px; font-weight: bold; font-size: 16px;
+            width: 100%; cursor: pointer;
+        }
+
+        /* Подсветка при голосовании */
+        .highlight { z-index: 100; transform: scale(1.15); }
+        .highlight .avatar { border-color: #00ff88; box-shadow: 0 0 20px #00ff88; }
+
+        /* Нижнее меню */
+        .bottom-nav {
+            height: 70px; background: #111;
+            display: flex; justify-content: space-around; align-items: center;
+            border-top: 1px solid #222;
+        }
+        .nav-item { font-size: 24px; opacity: 0.5; transition: 0.2s; }
+        .nav-item.active { opacity: 1; color: var(--neon-blue); transform: translateY(-5px); }
+
+    </style>
+</head>
+<body>
+
+    <div id="screen-lobby" class="screen active">
+        <div class="lobby-container">
+            <div class="logo">SIX</div>
+            <div class="online-tag">🟢 1,240 Online</div>
+            
+            <button class="big-btn" onclick="startSearching()">START</button>
+            
+            <div style="margin-top: 30px; opacity: 0.6; font-size: 12px;">
+                Баланс: <b id="user-balance">100 🪙</b>
+            </div>
+        </div>
+        <div class="bottom-nav">
+            <div class="nav-item active">🏠</div>
+            <div class="nav-item">💬</div>
+            <div class="nav-item" onclick="buyPack()">🛍</div>
+            <div class="nav-item">👤</div>
+        </div>
+    </div>
+
+    <div id="screen-search" class="screen">
+        <div class="search-wrapper">
+            <div class="radar"></div>
+            <div style="font-size: 18px; font-weight: bold;">Ищем пару...</div>
+            <div style="margin-top: 10px; color: #666;">Листай мемы в боте</div>
+        </div>
+    </div>
+
+    <div id="screen-game" class="screen">
+        <div class="game-header">
+            <div style="font-weight: 900; letter-spacing: 1px;">TABLE #124</div>
+            <div class="timer-badge" id="game-timer">00:05</div>
+        </div>
+
+        <div class="table-grid">
+            <div class="player-card team-left" onclick="voteFor('Аня')">
+                <div class="avatar-wrapper"><div class="avatar g1"></div></div>
+                <div class="p-name">Аня</div>
+            </div>
+            
+            <div class="player-card team-right">
+                <div class="avatar-wrapper"><div class="avatar b1"></div></div>
+                <div class="p-name">Макс</div>
+            </div>
+
+            <div class="player-card team-left" onclick="voteFor('Оппонент')">
+                <div class="avatar-wrapper"><div class="avatar g2" id="opponent-avatar"></div></div>
+                <div class="p-name" id="opponent-name">Катя</div>
+            </div>
+
+            <div class="player-card team-right">
+                <div class="avatar-wrapper"><div class="avatar b2" id="my-game-avatar"></div></div>
+                <div class="p-name" id="my-game-name" style="color:var(--neon-blue)">ВЫ</div>
+            </div>
+
+            <div class="player-card team-left" onclick="voteFor('Оля')">
+                <div class="avatar-wrapper"><div class="avatar g3"></div></div>
+                <div class="p-name">Оля</div>
+            </div>
+
+            <div class="player-card team-right">
+                <div class="avatar-wrapper"><div class="avatar b3"></div></div>
+                <div class="p-name">Дэн</div>
+            </div>
+        </div>
+
+        <div class="question-overlay" id="q-box">
+            <div class="q-label">РАУНД 1</div>
+            <div class="q-text">Загрузка вопроса...</div>
+        </div>
+
+        <div class="vote-layer" id="vote-screen">
+            <div class="vote-header">
+                <div class="vote-title">КТО ЗАЦЕПИЛ?</div>
+                <div class="vote-sub">Нажми на фото, чтобы выбрать</div>
+            </div>
+            <button class="skip-btn" onclick="skipVote()">НИКТО (СКИП)</button>
+        </div>
+    </div>
+
+    <script>
+        let tg = window.Telegram.WebApp;
+        tg.expand();
+
+        // 1. Инициализация (Фото и Имя)
+        if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
+            const u = tg.initDataUnsafe.user;
+            document.getElementById('my-game-name').innerText = u.first_name;
+            if (u.photo_url) {
+                document.getElementById('my-game-avatar').style.backgroundImage = `url('${u.photo_url}')`;
+                // В лобби аватарки нет в этом дизайне, но можно добавить
+            }
+        }
+
+        // 2. Роутинг (Какой экран показать)
+        const urlParams = new URLSearchParams(window.location.search);
+        const mode = urlParams.get('mode');
+        let question1 = "Раунд 1..."; 
+        let question2 = "Раунд 2...";
+
+        if (mode === 'game') {
+            showScreen('screen-game');
+            setupGame();
+        } else {
+            showScreen('screen-lobby');
+        }
+
+        function showScreen(id) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+        }
+
+        // --- ЛОГИКА ИГРЫ ---
+        function setupGame() {
+            // Вопросы
+            const q1 = urlParams.get('q1');
+            const q2 = urlParams.get('q2');
+            if (q1) question1 = decodeURIComponent(q1);
+            if (q2) question2 = decodeURIComponent(q2);
+
+            // Оппонент
+            const oppName = urlParams.get('opp_name');
+            const oppPhoto = urlParams.get('opp_photo');
+            const oppAvatar = document.getElementById('opponent-avatar');
+            
+            if (oppName) {
+                document.getElementById('opponent-name').innerText = decodeURIComponent(oppName);
+                document.getElementById('opponent-name').style.color = "#ff00ff";
+            }
+            // Если фото есть - ставим его, иначе заглушка из CSS
+            if (oppPhoto && oppPhoto !== "null" && oppPhoto !== "") {
+                oppAvatar.style.backgroundImage = `url('${decodeURIComponent(oppPhoto)}')`;
+            }
+            oppAvatar.classList.add('blurred'); // Включаем блюр
+
+            // Запускаем 1 раунд
+            runRound(1);
+        }
+
+        function runRound(roundNum) {
+            // Ставим вопрос
+            const text = (roundNum === 1) ? question1 : question2;
+            const qBox = document.getElementById('q-box');
+            
+            // Анимация текста
+            qBox.style.opacity = 0;
+            setTimeout(() => {
+                qBox.innerHTML = `<div class="q-label">РАУНД ${roundNum}</div><div class="q-text">"${text}"</div>`;
+                qBox.style.opacity = 1;
+                tg.HapticFeedback.selectionChanged();
+            }, 300);
+
+            // Таймер 5 секунд
+            let timeLeft = 5; 
+            updateTimerUI(timeLeft);
+
+            const interval = setInterval(() => {
+                timeLeft--;
+                updateTimerUI(timeLeft);
+
+                if (timeLeft <= 0) {
+                    clearInterval(interval);
+                    if (roundNum === 1) {
+                        runRound(2); // Переход ко 2 раунду
+                    } else {
+                        endGame(); // Конец
+                    }
+                }
+            }, 1000);
+        }
+
+        function updateTimerUI(seconds) {
+            document.getElementById('game-timer').innerText = `00:${seconds < 10 ? '0'+seconds : seconds}`;
+        }
+
+        function endGame() {
+            tg.HapticFeedback.notificationOccurred('warning');
+            
+            // Прячем вопрос, показываем оверлей
+            document.getElementById('q-box').style.opacity = 0; 
+            document.getElementById('vote-screen').style.display = 'flex';
+            
+            // Подсвечиваем игроков (выводим на передний план)
+            document.querySelectorAll('.player-card').forEach(p => p.classList.add('highlight'));
+        }
+
+        // --- ГОЛОСОВАНИЕ ---
+        function voteFor(name) {
+            // Нельзя голосовать, пока не начался финал
+            if (document.getElementById('vote-screen').style.display !== 'flex') return;
+
+            tg.HapticFeedback.impactOccurred('heavy');
+            
+            // Убираем интерфейс голосования
+            document.getElementById('vote-screen').style.display = 'none';
+            document.querySelectorAll('.player-card').forEach(p => p.classList.remove('highlight'));
+
+            revealMasks(name);
+        }
+
+        function skipVote() { voteFor('Никто'); }
+
+        function revealMasks(choice) {
+            // ЭФФЕКТ: Снимаем блюр
+            const oppAvatar = document.getElementById('opponent-avatar');
+            oppAvatar.classList.remove('blurred');
+            oppAvatar.classList.add('unblurred');
+            
+            const isLiked = (choice !== 'Никто');
+
+            // Пауза 1.5 сек, чтобы увидеть лицо -> Отправка
+            setTimeout(() => {
+                const data = JSON.stringify({ action: "vote", liked: isLiked });
+                tg.sendData(data);
+            }, 1500);
+        }
+
+        // --- УТИЛИТЫ ---
+        function buyPack() { tg.sendData(JSON.stringify({action:"buy_pack"})); }
+        
+        function startSearching() {
+            // 1. Проверка клика
+            alert("Кнопка нажата! Начинаем..."); 
+
+            try {
+                // 2. Проверка вибрации
+                tg.HapticFeedback.impactOccurred('heavy');
+            } catch (e) {
+                alert("Ошибка вибрации: " + e);
+            }
+
+            // 3. Подготовка данных
+            let photo = "";
+            try {
+                const u = tg.initDataUnsafe.user;
+                if (u && u.photo_url) {
+                    photo = u.photo_url;
+                }
+                // alert("Фото найдено: " + photo); // Можно раскомментить для теста
+            } catch (e) {
+                alert("Ошибка данных юзера: " + e);
+            }
+
+            // 4. Отправка
+            try {
+                const data = JSON.stringify({action: "search", photo: photo});
+                // alert("Отправляю данные: " + data); 
+                tg.sendData(data);
+                
+                // 5. Если дошли сюда - значит команда ушла
+                // alert("Команда sendData выполнена!"); 
+            } catch (e) {
+                alert("КРИТИЧЕСКАЯ ОШИБКА ОТПРАВКИ: " + e);
+            }
+        }
+
+        /* Картинки-заглушки для теста */
+        .g1 { background-image: url('https://randomuser.me/api/portraits/women/44.jpg'); }
+        .g2 { background-image: url('https://randomuser.me/api/portraits/women/68.jpg'); }
+        .g3 { background-image: url('https://randomuser.me/api/portraits/women/32.jpg'); }
+        .b1 { background-image: url('https://randomuser.me/api/portraits/men/44.jpg'); }
+        .b2 { background-image: url('https://randomuser.me/api/portraits/men/86.jpg'); }
+        .b3 { background-image: url('https://randomuser.me/api/portraits/men/22.jpg'); }
+    </script>
+</body>
+</html>
