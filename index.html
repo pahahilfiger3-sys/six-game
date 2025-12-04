@@ -9,42 +9,131 @@
     <style>
         :root { --neon-blue: #00f3ff; --neon-pink: #ff00ff; --bg-dark: #0b0b14; }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { margin: 0; background: var(--bg-dark); color: white; font-family: 'Montserrat', sans-serif; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
         
-        .screen { display: none; height: 100%; flex-direction: column; }
+        body { 
+            margin: 0; background: var(--bg-dark); 
+            color: white; font-family: 'Montserrat', sans-serif; 
+            height: 100vh; overflow: hidden; 
+            display: flex; flex-direction: column; 
+        }
+        
+        .screen { display: none; height: 100%; flex-direction: column; width: 100%; }
         .screen.active { display: flex; }
 
-        /* ЛОББИ */
-        .lobby-container { flex-grow: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; }
-        .logo { font-size: 60px; font-weight: 900; text-shadow: 0 0 20px var(--neon-pink); margin-bottom: 20px; }
+        /* --- ЛОББИ --- */
+        .lobby-container { 
+            flex-grow: 1; display: flex; flex-direction: column; 
+            justify-content: center; align-items: center; 
+            background: radial-gradient(circle, rgba(255,0,85,0.1) 0%, rgba(0,0,0,0) 70%);
+        }
+        .logo { font-size: 70px; font-weight: 900; text-shadow: 0 0 30px var(--neon-pink); margin-bottom: 40px; letter-spacing: -3px; }
         
-        /* КНОПКА СТАРТ - МАКСИМАЛЬНЫЙ Z-INDEX */
+        /* КНОПКА СТАРТ (ИСПРАВЛЕННАЯ) */
         .big-btn {
             background: linear-gradient(135deg, #ff0055, #ff00aa);
-            width: 200px; height: 200px; border-radius: 50%; border: none;
-            color: white; font-size: 28px; font-weight: 900;
-            box-shadow: 0 0 40px rgba(255, 0, 85, 0.4);
+            width: 220px; height: 220px; border-radius: 50%; border: none;
+            color: white; font-size: 32px; font-weight: 900;
+            box-shadow: 0 0 50px rgba(255, 0, 85, 0.5);
             cursor: pointer;
-            position: relative; z-index: 2147483647; /* ВЫШЕ ВСЕГО */
+            position: relative; z-index: 9999; 
             pointer-events: auto;
+            display: flex; align-items: center; justify-content: center;
             animation: pulse 2s infinite;
+            text-transform: uppercase;
         }
-        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); box-shadow: 0 0 70px rgba(255, 0, 85, 0.7); } 100% { transform: scale(1); } }
 
-        /* ИГРА */
-        .game-header { padding: 15px; display: flex; justify-content: space-between; font-weight: bold; }
-        .table-grid { flex-grow: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 10px; align-content: center; }
-        .player-card { display: flex; flex-direction: column; align-items: center; }
-        .avatar { width: 70px; height: 70px; border-radius: 50%; background: #333; background-size: cover; border: 3px solid #333; }
-        .blurred { filter: blur(10px); }
-        .unblurred { filter: blur(0px); }
+        /* --- ИГРОВОЙ СТОЛ --- */
+        .game-header { 
+            padding: 20px; display: flex; justify-content: space-between; 
+            font-weight: 900; font-size: 14px; letter-spacing: 1px; color: #888;
+        }
+        #game-timer { color: white; font-size: 18px; text-shadow: 0 0 10px red; }
+
+        /* СЕТКА ИГРОКОВ (РОВНАЯ) */
+        .table-grid { 
+            flex-grow: 1; 
+            display: grid; 
+            grid-template-columns: 1fr 1fr; /* Две колонки */
+            grid-template-rows: 1fr 1fr 1fr; /* Три ряда */
+            gap: 15px; 
+            padding: 20px 40px; 
+            align-items: center; justify-items: center;
+        }
+
+        .player-card { 
+            display: flex; flex-direction: column; align-items: center; 
+            position: relative; width: 100%;
+        }
+
+        .avatar { 
+            width: 90px; height: 90px; 
+            border-radius: 50%; 
+            background: #222; background-size: cover; background-position: center;
+            border: 3px solid #333; 
+            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .name-tag {
+            margin-top: 8px; font-size: 12px; font-weight: 700;
+            background: rgba(0,0,0,0.5); padding: 4px 10px; border-radius: 12px;
+        }
+
+        /* Цвета команд */
+        .team-left .avatar { border-color: var(--neon-pink); }
+        .team-right .avatar { border-color: var(--neon-blue); }
+
+        /* Эффекты */
+        .blurred { filter: blur(12px); transform: scale(0.95); opacity: 0.8; }
+        .unblurred { filter: blur(0px); transform: scale(1); opacity: 1; }
         
-        .question-overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 90%; background: rgba(20,20,30,0.9); padding: 20px; border: 1px solid var(--neon-blue); border-radius: 15px; text-align: center; z-index: 50; transition: opacity 0.3s; }
-        
-        .vote-layer { position: absolute; inset: 0; background: rgba(0,0,0,0.9); z-index: 90; display: none; flex-direction: column; justify-content: space-between; padding: 60px 20px; }
-        .vote-title { text-align: center; font-size: 24px; font-weight: bold; }
-        .skip-btn { background: transparent; border: 2px solid #555; color: #aaa; padding: 15px; width: 100%; border-radius: 15px; font-size: 16px; margin-bottom: 20px; }
-        .highlight { z-index: 100; transform: scale(1.1); border-color: #00ff88; }
+        /* ВОПРОС */
+        .question-overlay { 
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
+            width: 85%; 
+            background: rgba(16, 16, 24, 0.95); 
+            padding: 25px; 
+            border: 1px solid var(--neon-blue); 
+            border-radius: 20px; 
+            text-align: center; 
+            z-index: 50; 
+            box-shadow: 0 0 40px rgba(0, 243, 255, 0.15);
+            transition: opacity 0.3s; 
+        }
+        .q-label { font-size: 10px; color: var(--neon-blue); letter-spacing: 2px; margin-bottom: 10px; }
+        .q-text { font-size: 16px; line-height: 1.5; font-weight: 600; }
+
+        /* ГОЛОСОВАНИЕ (ФИКС) */
+        .vote-layer { 
+            position: absolute; inset: 0; 
+            background: rgba(0,0,0,0.92); 
+            z-index: 90; 
+            display: none; 
+            flex-direction: column; 
+            justify-content: space-between; 
+            padding: 40px 20px;
+            backdrop-filter: blur(5px);
+        }
+        .vote-header { text-align: center; margin-top: 20px; }
+        .vote-title { font-size: 26px; font-weight: 900; margin-bottom: 5px; }
+        .vote-sub { color: #888; font-size: 14px; }
+
+        .skip-btn { 
+            background: transparent; border: 2px solid #333; color: #666; 
+            padding: 15px; width: 100%; border-radius: 15px; 
+            font-size: 16px; font-weight: bold; cursor: pointer; margin-bottom: 20px;
+        }
+
+        /* ПОДСВЕТКА ВЫБОРА */
+        .highlight { z-index: 100; }
+        .highlight .avatar { 
+            transform: scale(1.2); 
+            border-color: #00ff88; 
+            box-shadow: 0 0 30px #00ff88; 
+        }
+        .highlight .name-tag { color: #00ff88; background: rgba(0, 255, 136, 0.1); }
+
     </style>
 </head>
 <body>
@@ -58,22 +147,50 @@
 
     <div id="screen-game" class="screen">
         <div class="game-header"><span>TABLE #1</span><span id="game-timer">00:05</span></div>
+        
         <div class="table-grid">
-            <div class="player-card"><div class="avatar" style="background-image:url('https://randomuser.me/api/portraits/women/1.jpg')"></div><span>Аня</span></div>
-            <div class="player-card"><div class="avatar" style="background-image:url('https://randomuser.me/api/portraits/men/1.jpg')"></div><span>Макс</span></div>
-            <div class="player-card" onclick="voteFor('Оппонент')">
-                <div class="avatar" id="opponent-avatar"></div><span id="opponent-name" style="color:magenta">Катя</span>
+            <div class="player-card team-left" onclick="voteFor('Аня')">
+                <div class="avatar" style="background-image:url('https://randomuser.me/api/portraits/women/44.jpg')"></div>
+                <div class="name-tag">Аня</div>
             </div>
-            <div class="player-card">
-                <div class="avatar" id="my-avatar"></div><span style="color:cyan">ВЫ</span>
+            
+            <div class="player-card team-right">
+                <div class="avatar" style="background-image:url('https://randomuser.me/api/portraits/men/32.jpg')"></div>
+                <div class="name-tag">Макс</div>
             </div>
-            <div class="player-card"><div class="avatar" style="background-image:url('https://randomuser.me/api/portraits/women/2.jpg')"></div><span>Оля</span></div>
-            <div class="player-card"><div class="avatar" style="background-image:url('https://randomuser.me/api/portraits/men/2.jpg')"></div><span>Дэн</span></div>
+
+            <div class="player-card team-left" onclick="voteFor('Оппонент')">
+                <div class="avatar" id="opponent-avatar"></div>
+                <div class="name-tag" id="opponent-name" style="color:var(--neon-pink)">Катя</div>
+            </div>
+
+            <div class="player-card team-right">
+                <div class="avatar" id="my-avatar"></div>
+                <div class="name-tag" style="color:var(--neon-blue)">ВЫ</div>
+            </div>
+
+            <div class="player-card team-left" onclick="voteFor('Оля')">
+                <div class="avatar" style="background-image:url('https://randomuser.me/api/portraits/women/68.jpg')"></div>
+                <div class="name-tag">Оля</div>
+            </div>
+
+            <div class="player-card team-right">
+                <div class="avatar" style="background-image:url('https://randomuser.me/api/portraits/men/86.jpg')"></div>
+                <div class="name-tag">Дэн</div>
+            </div>
         </div>
-        <div class="question-overlay" id="q-box">Загрузка...</div>
+
+        <div class="question-overlay" id="q-box">
+            <div class="q-label">РАУНД 1</div>
+            <div class="q-text">Загрузка...</div>
+        </div>
+
         <div class="vote-layer" id="vote-screen">
-            <div class="vote-title">КТО ПОНРАВИЛСЯ? ❤️</div>
-            <button class="skip-btn" onclick="skipVote()">НИКТО</button>
+            <div class="vote-header">
+                <div class="vote-title">КТО ЗАЦЕПИЛ? ❤️</div>
+                <div class="vote-sub">Тапай на фото</div>
+            </div>
+            <button class="skip-btn" onclick="skipVote()">НИКТО (СКИП)</button>
         </div>
     </div>
 
@@ -97,9 +214,7 @@
 
         // --- ПОИСК ---
         function startSearching() {
-            // ДИАГНОСТИКА
-            alert("Клик прошел! Ищем...");
-            
+            // Убрал Alert, раз уже работает
             tg.HapticFeedback.impactOccurred('heavy');
             const photo = u ? u.photo_url : "";
             tg.sendData(JSON.stringify({action:"search", photo: photo}));
@@ -109,12 +224,19 @@
         function setupGame() {
             const q1 = decodeURIComponent(urlParams.get('q1') || "Вопрос 1");
             const q2 = decodeURIComponent(urlParams.get('q2') || "Вопрос 2");
-            const oppPhoto = urlParams.get('opp_photo');
+            
             const oppName = urlParams.get('opp_name');
-
+            const oppPhoto = urlParams.get('opp_photo');
+            
             if (oppName) document.getElementById('opponent-name').innerText = decodeURIComponent(oppName);
             const oppAvatar = document.getElementById('opponent-avatar');
-            if (oppPhoto && oppPhoto !== "null") oppAvatar.style.backgroundImage = `url('${decodeURIComponent(oppPhoto)}')`;
+            
+            if (oppPhoto && oppPhoto !== "null") {
+                oppAvatar.style.backgroundImage = `url('${decodeURIComponent(oppPhoto)}')`;
+            } else {
+                // Если фото нет - ставим красивую заглушку
+                oppAvatar.style.backgroundImage = `url('https://randomuser.me/api/portraits/women/2.jpg')`;
+            }
             
             oppAvatar.classList.add('blurred');
 
@@ -125,7 +247,11 @@
             const text = (num === 1) ? q1 : q2;
             const qBox = document.getElementById('q-box');
             qBox.style.opacity = 0;
-            setTimeout(() => { qBox.innerHTML = `РАУНД ${num}<br>${text}`; qBox.style.opacity = 1; }, 300);
+            setTimeout(() => { 
+                qBox.innerHTML = `<div class="q-label">РАУНД ${num}</div><div class="q-text">${text}</div>`; 
+                qBox.style.opacity = 1; 
+                tg.HapticFeedback.selectionChanged();
+            }, 300);
 
             let timeLeft = 5;
             const timer = document.getElementById('game-timer');
@@ -135,7 +261,12 @@
                 timer.innerText = `00:0${timeLeft}`;
                 if (timeLeft <= 0) {
                     clearInterval(interval);
-                    if (num === 1) runRound(2, q1, q2);
+                    if (num === 1) {
+                        // Анимация смены раунда
+                        timer.style.color = '#00ff88';
+                        setTimeout(() => timer.style.color = 'white', 500);
+                        runRound(2, q1, q2);
+                    }
                     else endGame();
                 }
             }, 1000);
@@ -144,12 +275,16 @@
         function endGame() {
             document.getElementById('q-box').style.opacity = 0;
             document.getElementById('vote-screen').style.display = 'flex';
-            document.querySelectorAll('.player-card').forEach(p => p.style.zIndex = 100);
+            // Поднимаем карточки вверх, чтобы на них можно было жать
+            document.querySelectorAll('.player-card').forEach(p => p.classList.add('highlight'));
         }
 
         function voteFor(name) {
             if (document.getElementById('vote-screen').style.display !== 'flex') return;
+            tg.HapticFeedback.impactOccurred('heavy');
+            
             document.getElementById('vote-screen').style.display = 'none';
+            document.querySelectorAll('.player-card').forEach(p => p.classList.remove('highlight'));
             
             // Эффект
             const oppAvatar = document.getElementById('opponent-avatar');
@@ -157,6 +292,8 @@
             oppAvatar.classList.add('unblurred');
 
             const isLiked = (name !== 'Никто');
+            
+            // Авто-отправка через 1.5 сек
             setTimeout(() => {
                 tg.sendData(JSON.stringify({action: "vote", liked: isLiked}));
             }, 1500);
