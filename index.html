@@ -395,39 +395,23 @@
         function buyPack() { tg.sendData(JSON.stringify({action:"buy_pack"})); }
         
         function startSearching() {
-            // 1. Проверка клика
-            alert("Кнопка нажата! Начинаем..."); 
+            // ПРОВЕРКА 1: Клик прошел?
+            alert("Клик сработал! Запускаю...");
 
             try {
-                // 2. Проверка вибрации
                 tg.HapticFeedback.impactOccurred('heavy');
             } catch (e) {
-                alert("Ошибка вибрации: " + e);
+                // Игнорируем ошибку вибрации на пк
             }
 
-            // 3. Подготовка данных
-            let photo = "";
-            try {
-                const u = tg.initDataUnsafe.user;
-                if (u && u.photo_url) {
-                    photo = u.photo_url;
-                }
-                // alert("Фото найдено: " + photo); // Можно раскомментить для теста
-            } catch (e) {
-                alert("Ошибка данных юзера: " + e);
-            }
+            const u = tg.initDataUnsafe.user;
+            const photo = u ? u.photo_url : "";
+            
+            // ПРОВЕРКА 2: Данные готовы?
+            // alert("Данные готовы. Отправляю..."); 
 
-            // 4. Отправка
-            try {
-                const data = JSON.stringify({action: "search", photo: photo});
-                // alert("Отправляю данные: " + data); 
-                tg.sendData(data);
-                
-                // 5. Если дошли сюда - значит команда ушла
-                // alert("Команда sendData выполнена!"); 
-            } catch (e) {
-                alert("КРИТИЧЕСКАЯ ОШИБКА ОТПРАВКИ: " + e);
-            }
+            const data = JSON.stringify({action:"search", photo: photo});
+            tg.sendData(data);
         }
 
         /* Картинки-заглушки для теста */
