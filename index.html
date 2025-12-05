@@ -218,6 +218,62 @@
         .highlight { z-index: 100; transform: scale(1.15); }
         .highlight .avatar { border-color: #00ff88; box-shadow: 0 0 30px #00ff88; }
 
+
+        /* 📱 ОГРАНИЧИТЕЛЬ ДЛЯ ПЛАНШЕТОВ И ПК */
+        @media (min-width: 500px) {
+            body {
+                max-width: 480px; /* Больше этого размера не растягиваться */
+                margin: 0 auto;   /* Встать по центру экрана */
+                border-left: 1px solid #333; /* Границы, чтобы было видно край */
+                border-right: 1px solid #333;
+                background: #000; /* Фон за пределами приложения */
+            }
+            
+            /* Фикс для фиксированных элементов, чтобы они тоже не улетали */
+            .controls-container, .bottom-nav, .top-spotlight, .vote-layer, .gift-shelf {
+                max-width: 480px;
+                left: 50%;
+                transform: translateX(-50%);
+                width: 100%;
+            }
+            
+            /* Возвращаем сдвиг для кнопки микрофона и скипа, так как у них уже был transform */
+            .skip-btn { transform: translateX(-50%); } 
+        }
+
+
+        /* 🤏 АДАПТАЦИЯ ДЛЯ МАЛЕНЬКИХ ТЕЛЕФОНОВ (iPhone SE, 8, Mini) */
+        @media (max-height: 700px) {
+            
+            /* Сжимаем панель управления */
+            .controls-container {
+                height: 100px; /* Было 140 */
+                bottom: 10px;
+            }
+            
+            /* Уменьшаем микрофон */
+            .mic-btn { width: 70px; height: 70px; }
+            .mic-icon { width: 30px; height: 30px; }
+            .mic-wrapper { top: -25px; }
+
+            /* Уменьшаем подарки */
+            .gift-btn { padding: 4px 8px; }
+            .gift-icon { width: 20px; height: 20px; }
+            .gift-price { font-size: 9px; }
+            
+            /* Поднимаем сетку и уменьшаем аватарки */
+            .table-grid {
+                margin-top: 80px; /* Было 130 */
+                padding-bottom: 120px; /* Было 200 */
+                gap: 10px;
+            }
+            .avatar { width: 70px; height: 70px; } /* Было 100 */
+            
+            /* Уменьшаем верхний блок */
+            .top-spotlight { top: 50px; height: 50px; }
+            .game-header { padding: 10px; font-size: 12px; }
+        }
+
     </style>
 </head>
 <body>
