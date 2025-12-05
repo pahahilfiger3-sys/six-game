@@ -80,14 +80,14 @@
         .wave-visual { flex-grow: 1; height: 4px; background: #333; margin: 0 10px; border-radius: 2px; position: relative; }
         .wave-fill { height: 100%; width: 40%; background: white; border-radius: 2px; }
 
-        /* СЕТКА (Опустили вниз) */
+        /* СЕТКА (Опустили еще ниже) */
         .table-grid { 
             flex-grow: 1; display: grid; 
             grid-template-columns: 1fr 1fr; 
-            align-content: start; /* Прижимаем к верху контейнера, но с отступом */
+            align-content: start; 
             justify-items: center;
-            /* ВАЖНО: Увеличил отступ сверху, чтобы отлепить от вопроса */
-            margin-top: 90px; 
+            /* 👇 ИЗМЕНЕНИЕ ЗДЕСЬ: БЫЛО 90px, СТАЛО 130px */
+            margin-top: 130px; 
             gap: 20px; 
             padding-bottom: 200px; 
         }
@@ -122,11 +122,11 @@
         /* 🟢 ПРЕМИУМ ПАНЕЛЬ (DASHBOARD) */
         .controls-container {
             position: absolute; bottom: 20px; left: 10px; right: 10px;
-            height: 130px;
-            background: rgba(18, 18, 24, 0.95); /* Почти непрозрачный */
-            backdrop-filter: blur(15px);
+            height: 140px;
+            background: rgba(18, 18, 24, 0.85); /* Полупрозрачный черный */
+            backdrop-filter: blur(15px); /* Эффект матового стекла */
             border-radius: 35px;
-            border: 1px solid rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.08); /* Тонкая рамка */
             box-shadow: 0 10px 40px rgba(0,0,0,0.6);
             display: grid;
             grid-template-columns: 1fr auto 1fr;
@@ -135,57 +135,58 @@
             z-index: 60;
         }
 
+        /* Столбики иконок */
         .side-col {
-            display: flex; flex-direction: column; gap: 10px; 
+            display: flex; flex-direction: column; gap: 12px; 
             justify-content: center; align-items: center;
         }
-        .side-col.left { padding-right: 15px; align-items: flex-end; }
-        .side-col.right { padding-left: 15px; align-items: flex-start; }
+        .side-col.left { padding-right: 10px; align-items: flex-end; }
+        .side-col.right { padding-left: 10px; align-items: flex-start; }
 
-        /* Кнопка подарка */
+        /* Стильная кнопка подарка */
         .gift-btn {
             display: flex; align-items: center; gap: 10px;
             background: rgba(255,255,255,0.03); 
-            padding: 6px 12px; border-radius: 15px;
+            padding: 8px 12px; border-radius: 15px;
             border: 1px solid transparent;
             transition: all 0.2s; cursor: pointer;
-            width: 80px; /* Фикс ширина для ровности */
+            width: 85px; 
             justify-content: space-between;
         }
         .gift-btn:active { background: rgba(255,255,255,0.1); transform: scale(0.95); }
         
-        /* ЦВЕТНЫЕ ИКОНКИ */
-        .gift-icon { width: 26px; height: 26px; filter: drop-shadow(0 0 5px rgba(255,255,255,0.1)); }
+        /* SVG Иконки */
+        .gift-icon { width: 24px; height: 24px; fill: white; opacity: 0.9; filter: drop-shadow(0 0 5px rgba(255,255,255,0.3)); }
         
-        .gift-price { font-size: 11px; font-weight: 800; color: #fff; opacity: 0.6; }
+        /* Золотой ценник */
+        .gift-price { font-size: 11px; font-weight: 800; color: var(--gold); }
 
         /* Центральный Микрофон */
         .mic-wrapper {
-            position: relative; top: -35px; 
+            position: relative; top: -35px; /* Сильно выступает наверх */
             display: flex; justify-content: center;
         }
 
         .mic-btn {
             width: 90px; height: 90px;
-            background: linear-gradient(145deg, #ffffff, #e6e6e6);
+            background: linear-gradient(145deg, #ffffff, #e6e6e6); 
             border-radius: 50%;
             display: flex; justify-content: center; align-items: center;
             box-shadow: 0 10px 25px rgba(0,0,0,0.5), inset 0 2px 5px rgba(255,255,255,1);
             border: none; cursor: pointer; z-index: 70;
             transition: transform 0.1s;
-            animation: breathe 3s infinite ease-in-out; /* Живая пульсация */
         }
-        @keyframes breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.02); } }
-        
-        .mic-btn:active { transform: scale(0.95); animation: none; }
+        .mic-btn:active { transform: scale(0.95); }
         
         .mic-icon { width: 40px; height: 40px; fill: #111; }
 
         .mic-btn.recording { 
-            background: #ff0055; box-shadow: 0 0 40px #ff0055; animation: none; 
+            background: #ff0055; 
+            box-shadow: 0 0 40px #ff0055; 
         }
         .mic-btn.recording .mic-icon { fill: white; }
 
+        /* Клавиатура */
         .keyboard-btn { 
             position: absolute; right: 20px; bottom: 15px; 
             width: 35px; height: 35px; background: rgba(255,255,255,0.1);
@@ -194,6 +195,7 @@
         }
         .kb-icon { width: 20px; height: 20px; fill: white; opacity: 0.6; }
 
+        /* Режим записи (затемняем лишнее) */
         .recording-mode .side-col, .recording-mode .keyboard-btn { opacity: 0.2; pointer-events: none; transition: 0.3s; }
 
         /* ГОЛОСОВАНИЕ */
