@@ -344,12 +344,7 @@
     <script>
         let tg = window.Telegram.WebApp;
         tg.expand();
-        // Красим шапку в цвет твоего фона (#0b0b14)
-        tg.setHeaderColor('#0b0b14'); 
-        
-        // На всякий случай красим и системный фон самого WebApp
-        tg.setBackgroundColor('#0b0b14');
-        
+
         const u = tg.initDataUnsafe.user;
         const myPhoto = (u && u.photo_url) ? u.photo_url : "";
         if (myPhoto) {
