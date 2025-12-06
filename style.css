@@ -1,4 +1,4 @@
-:root { --neon-blue: #00f3ff; --neon-pink: #ff00ff; --bg-dark: #0b0b14; --gold: #ffd700; --gold-premium: #FFD700; --silver-premium: #E0E0E0;}
+:root { --neon-blue: #00f3ff; --neon-pink: #ff00ff; --bg-dark: #0b0b14; --gold: #ffd700; --gold-premium: #FFD700; --silver-premium: #E0E0E0; --uv-purple: #B800FF; --emerald: #39FF14;}
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
 /* 🟢 ОБНОВЛЕННЫЙ ФОН: ГЛУБИНА + ШУМ (FILM GRAIN) */
@@ -135,12 +135,20 @@ body {
 }
 
 .team-left .avatar { 
-            border-color: var(--gold-premium); 
-            box-shadow: 0 0 10px rgba(255, 215, 0, 0.4); /* Золотое свечение */
+    border-color: #39FF14; /* Изумрудный ободок */
+    
+    /* Layered Shadow: Внешний ореол + Внутренний четкий свет */
+    box-shadow: 
+        0 0 12px #39FF14, /* Сильное внешнее свечение */
+        0 0 2px #FFFFFF;  /* Тонкая белая линия для резкости */
 }
 .team-right .avatar { 
-            border-color: var(--silver-premium); 
-            box-shadow: 0 0 10px rgba(224, 224, 224, 0.4); /* Серебряное свечение */
+    border-color: #B800FF; /* Фиолетовый ободок */
+    
+    /* Layered Shadow: Внешний ореол + Внутренний четкий свет */
+    box-shadow: 
+        0 0 12px #B800FF, /* Сильное внешнее свечение */
+        0 0 2px #FFFFFF;  /* Тонкая белая линия для резкости */
 }
 .blurred { filter: blur(12px); opacity: 0.9; }
 .unblurred { filter: blur(0px); opacity: 1; animation: none; } /* Убираем пульс после анблюра */
