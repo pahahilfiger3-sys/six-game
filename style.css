@@ -95,7 +95,7 @@ body {
 
     display: grid; 
     grid-template-columns: 1fr 1fr; 
-    gap: 70px; 
+    gap: 90px; 
 }
 
 .player-card { display: flex; flex-direction: column; align-items: center; position: relative; transition: transform 0.1s; }
