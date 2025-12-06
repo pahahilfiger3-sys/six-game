@@ -228,37 +228,81 @@
 
         // 🟢 ЛОГИКА ЗАПИСИ
         let isRecording = false;
-        function toggleRecording() {
+        let mediaRecorder; // Объявляем рекордер
+        let audioChunks = []; // Массив для записи данных
+
+        // 🟢 НОВАЯ ЛОГИКА: ЗАПРОС РАЗРЕШЕНИЯ И УПРАВЛЕНИЕ ЗАПИСЬЮ
+        async function toggleRecording() {
             const btn = document.getElementById('mic-btn');
             const qBox = document.getElementById('q-box-content');
             const playerBox = document.getElementById('player-box-content');
             const gameScreen = document.getElementById('screen-game');
             
             if (!isRecording) {
-                isRecording = true;
-                btn.classList.add('recording');
-                gameScreen.classList.add('recording-mode'); // Прячем подарки
-                tg.HapticFeedback.impactOccurred('medium');
+                // --- СТАРТ ЗАПИСИ ---
                 
-                qBox.style.display = 'none';
-                playerBox.style.display = 'flex';
-                playerBox.innerHTML = `
-                    <div style="width:10px; height:10px; background:red; border-radius:50%; animation:pulse 1s infinite;"></div>
-                    <div style="font-size:12px; color:red; letter-spacing:1px;">ЗАПИСЬ...</div>
-                    <div style="font-size:12px;">0:01</div>
-                `;
+                try {
+                    // 1. Запрос доступа к микрофону
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    
+                    mediaRecorder = new MediaRecorder(stream);
+                    mediaRecorder.ondataavailable = (event) => {
+                        audioChunks.push(event.data);
+                    };
+                    
+                    mediaRecorder.onstop = sendAudioData; // Что делать, когда запись остановлена
+                    
+                    audioChunks = [];
+                    mediaRecorder.start(); // Начинаем запись
+
+                    isRecording = true;
+                    btn.classList.add('recording');
+                    gameScreen.classList.add('recording-mode'); 
+                    tg.HapticFeedback.impactOccurred('medium');
+                    
+                    // Обновление UI на "ЗАПИСЬ..."
+                    qBox.style.display = 'none';
+                    playerBox.style.display = 'flex';
+                    playerBox.innerHTML = `
+                        <div style="width:10px; height:10px; background:red; border-radius:50%; animation:pulse 1s infinite;"></div>
+                        <div style="font-size:12px; color:red; letter-spacing:1px;">ЗАПИСЬ...</div>
+                        <div id="recording-timer" style="font-size:12px;">0:00</div>
+                    `;
+                    
+                } catch (err) {
+                    // Ошибка: Пользователь отказал в доступе
+                    alert('Ошибка: Не удалось получить доступ к микрофону. Разрешите доступ в настройках браузера/приложения.');
+                    console.error('Microphone access denied: ', err);
+                    return;
+                }
+
             } else {
+                // --- СТОП ЗАПИСИ ---
                 isRecording = false;
                 btn.classList.remove('recording');
-                gameScreen.classList.remove('recording-mode'); // Возвращаем подарки
+                gameScreen.classList.remove('recording-mode'); 
                 tg.HapticFeedback.notificationOccurred('success');
                 
-                playerBox.innerHTML = `<div style="color:#00ff88; font-size:12px;">ОТПРАВЛЕНО!</div>`;
-                setTimeout(() => {
-                    playerBox.style.display = 'none';
-                    qBox.style.display = 'block';
-                }, 1500);
+                if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                    mediaRecorder.stop();
+                }
+
+                // Визуальный фидбек "Обработка..."
+                playerBox.innerHTML = `<div style="color:#00ff88; font-size:12px;">ОБРАБОТКА...</div>`;
             }
+        }
+        
+        // 🟢 НОВАЯ ФУНКЦИЯ: ОТПРАВКА АУДИО
+        function sendAudioData() {
+            const audioBlob = new Blob(audioChunks, { type: 'audio/mp3' }); // Собираем файл
+            
+            // Здесь будет код для отправки файла на твой VPS-сервер
+            alert('Аудио успешно записано! Размер файла: ' + audioBlob.size + ' байт. Теперь нужно отправить его боту.');
+            
+            // Временно возвращаем UI к вопросу
+            const playerBox = document.getElementById('player-box-content');
+            playerBox.style.display = 'none';
+            document.getElementById('q-box-content').style.display = 'block';
         }
 
         function sendGift(type) {
