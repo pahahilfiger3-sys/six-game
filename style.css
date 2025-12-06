@@ -135,19 +135,19 @@ body {
 }
 
 .team-left .avatar { 
-    border-color: #39FF14; /* Изумрудный ободок */
-    
-    /* Layered Shadow: Внешний ореол + Внутренний четкий свет */
-    box-shadow: 
-        0 0 12px #39FF14, /* Сильное внешнее свечение */
-        0 0 2px #FFFFFF;  /* Тонкая белая линия для резкости */
-}
-.team-right .avatar { 
     border-color: #B800FF; /* Фиолетовый ободок */
     
     /* Layered Shadow: Внешний ореол + Внутренний четкий свет */
     box-shadow: 
         0 0 12px #B800FF, /* Сильное внешнее свечение */
+        0 0 2px #FFFFFF;  /* Тонкая белая линия для резкости */
+}
+.team-right .avatar { 
+    border-color: #39FF14; /* Изумрудный ободок */
+    
+    /* Layered Shadow: Внешний ореол + Внутренний четкий свет */
+    box-shadow: 
+        0 0 12px #39FF14, /* Сильное внешнее свечение */
         0 0 2px #FFFFFF;  /* Тонкая белая линия для резкости */
 }
 .blurred { filter: blur(12px); opacity: 0.9; }
