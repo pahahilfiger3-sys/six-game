@@ -1,4 +1,4 @@
-:root { --neon-blue: #00f3ff; --neon-pink: #ff00ff; --bg-dark: #0b0b14; --gold: #ffd700; }
+:root { --neon-blue: #00f3ff; --neon-pink: #ff00ff; --bg-dark: #0b0b14; --gold: #ffd700; --gold-premium: #FFD700; --silver-premium: #E0E0E0;}
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
 /* 🟢 ОБНОВЛЕННЫЙ ФОН: ГЛУБИНА + ШУМ (FILM GRAIN) */
@@ -134,8 +134,14 @@ body {
     background: rgba(0,0,0,0.5); padding: 4px 10px; border-radius: 12px;
 }
 
-.team-left .avatar { border-color: var(--neon-pink); }
-.team-right .avatar { border-color: var(--neon-blue); }
+.team-left .avatar { 
+            border-color: var(--gold-premium); 
+            box-shadow: 0 0 10px rgba(255, 215, 0, 0.4); /* Золотое свечение */
+}
+.team-right .avatar { 
+            border-color: var(--silver-premium); 
+            box-shadow: 0 0 10px rgba(224, 224, 224, 0.4); /* Серебряное свечение */
+}
 .blurred { filter: blur(12px); opacity: 0.9; }
 .unblurred { filter: blur(0px); opacity: 1; animation: none; } /* Убираем пульс после анблюра */
 
