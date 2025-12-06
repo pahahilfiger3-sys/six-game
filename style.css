@@ -91,7 +91,7 @@ body {
     margin: 0; padding: 0;
     
     /* Дополнительный отступ сверху, чтобы отлепить от вопроса */
-    padding-top: 10px; 
+    padding-top: 50px; 
     padding-bottom: 50px; 
 
     display: grid; 
