@@ -82,7 +82,7 @@ body {
     justify-content: center; 
     align-items: center;
     width: 100%;
-    transform: translateY(-50px);
+    transform: translateY(-30px);
 }
 
 /* СЕТКА АВАТАРОВ (Сдвинута вниз) */
