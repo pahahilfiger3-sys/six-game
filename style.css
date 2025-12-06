@@ -171,10 +171,15 @@ body {
 .gift-icon { width: 24px; height: 24px; filter: drop-shadow(0 2px 5px rgba(0,0,0,0.5)); }
 .gift-price { font-size: 11px; font-weight: 800; color: var(--gold); }
 
-/* Центральный Микрофон */
+/* Центральный Микрофон и клавиатура */
 .mic-wrapper {
-    position: relative; top: -35px;
-    display: flex; justify-content: center;
+            position: relative; 
+            top: 0; /* Сбрасываем старый офсет */
+            display: flex; 
+            flex-direction: column; /* Элементы идут вертикально */
+            justify-content: center;
+            align-items: center; /* Центрируем все дочерние элементы */
+            padding-bottom: 5px; /* Небольшой отступ от нижнего края контейнера */
 }
 
 .mic-btn {
@@ -198,10 +203,17 @@ body {
 .mic-btn.recording .mic-icon { fill: white; }
 
 .keyboard-btn { 
-    position: absolute; right: 20px; bottom: 15px; 
-    width: 35px; height: 35px; background: rgba(255,255,255,0.1);
-    border-radius: 50%; display: flex; justify-content: center; align-items: center;
-    cursor: pointer; z-index: 80;
+            position: relative; /* Встает в поток после микрофона */
+            margin-top: 10px; /* Отступ от микрофона */
+            
+            /* Сбрасываем старые absolute/corner стили */
+            right: auto;
+            bottom: auto;
+            
+            width: 45px; height: 45px; 
+            background: rgba(255,255,255,0.15); 
+            border-radius: 50%; display: flex; justify-content: center; align-items: center;
+            cursor: pointer; z-index: 80;
 }
 .kb-icon { width: 20px; height: 20px; fill: white; opacity: 0.6; }
 
