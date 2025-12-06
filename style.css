@@ -183,24 +183,34 @@ body {
 }
 
 .mic-btn {
-    width: 90px; height: 90px;
-    background: linear-gradient(145deg, #ffffff, #e6e6e6);
-    border-radius: 50%;
-    display: flex; justify-content: center; align-items: center;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.5), inset 0 2px 5px rgba(255,255,255,1);
-    border: none; cursor: pointer; z-index: 70;
-    transition: transform 0.1s;
+            width: 90px; height: 90px;
+            /* 👇 ИЗМЕНЕНИЕ: Темный фон, чтобы свечение было видно */
+            background: rgba(255, 255, 255, 0.1); 
+            border-radius: 50%;
+            display: flex; justify-content: center; align-items: center;
+            
+            /* 👇 ИЗМЕНЕНИЕ: Неоновый синий ободок и тень */
+            box-shadow: 0 0 0 3px rgba(0, 243, 255, 0.5), 0 10px 25px rgba(0, 0, 0, 0.7);
+            border: 2px solid var(--neon-blue); /* Четкий синий ободок */
+            
+            font-size: 40px; cursor: pointer; z-index: 70;
+            transition: transform 0.1s;
 }
 
 .mic-btn:active { transform: scale(0.95); }
 
-.mic-icon { width: 40px; height: 40px; fill: #111; }
+.mic-icon { 
+            width: 40px; height: 40px; 
+            fill: var(--neon-blue); /* Иконка становится синей */
+}
 
 .mic-btn.recording { 
-    background: #ff0055; 
-    box-shadow: 0 0 40px #ff0055; 
+            background: #ff0055; /* Красная заливка */
+            box-shadow: 0 0 60px #ff0055; /* Яркое красное свечение */
 }
-.mic-btn.recording .mic-icon { fill: white; }
+.mic-btn.recording .mic-icon { 
+            fill: white; /* Иконка становится белой на красном фоне */
+}
 
 .keyboard-btn { 
             position: relative; /* Встает в поток после микрофона */
