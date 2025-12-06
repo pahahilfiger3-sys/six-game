@@ -1,13 +1,19 @@
 :root { --neon-blue: #00f3ff; --neon-pink: #ff00ff; --bg-dark: #0b0b14; --gold: #ffd700; }
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
+/* 🟢 ОБНОВЛЕННЫЙ ФОН: ГЛУБИНА + ШУМ (FILM GRAIN) */
 body { 
     margin: 0; 
     background-color: #030307;
     background-image: 
-        radial-gradient(circle at 15% 25%, rgba(0, 243, 255, 0.05) 0%, transparent 40%),
-        radial-gradient(circle at 85% 75%, rgba(255, 0, 255, 0.05) 0%, transparent 40%);
-    color: white; font-family: 'Montserrat', sans-serif; 
+        /* 1. НЕОНОВЫЕ ГРАДИЕНТЫ ДЛЯ ГЛУБИНЫ */
+        radial-gradient(circle at 15% 25%, rgba(0, 243, 255, 0.08) 0%, transparent 40%),
+        radial-gradient(circle at 85% 75%, rgba(255, 0, 255, 0.08) 0%, transparent 40%),
+        /* 2. НОВЫЙ СЛОЙ: СТАТИЧЕСКИЙ ШУМ (Очень тонкий паттерн) */
+        url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAB3RJTUUH5gIUCyUe5h23jAAAAB10RVh0Q29tbWVudEFscGhhYmF0IFNob3BwZXIgMTYxL7I0eQAAABpJREFUeJxjYmBgYGBgYGBgYGEIAQEAIAAKQgAFAwB0rQAAAABJRU5ErkJggg==');
+    background-size: 100%, 100%, 2px 2px; /* Применяем размер 2x2px только для шума */
+    
+    color: white; font-family: 'Orbitron', sans-serif; 
     height: 100vh; overflow: hidden; 
     display: flex; flex-direction: column;
 }
