@@ -305,6 +305,18 @@
         
         // 🟢 НОВАЯ ФУНКЦИЯ: ОТПРАВКА АУДИО (ТЕПЕРЬ ПО HTTPS)
         function sendAudioData() {
+            // 🛠️ ПРОВЕРКА 1: Проверяем, есть ли данные вообще
+            console.log('Total recorded chunks:', audioChunks.length);
+    
+            const audioBlob = new Blob(audioChunks, { type: 'audio/ogg; codecs=opus' });
+    
+             // 🛠️ ПРОВЕРКА 2: Проверяем размер BLOB-объекта
+            console.log('Audio Blob Size (bytes):', audioBlob.size); 
+    
+            if (audioBlob.size === 0) {
+                alert("❌ Ошибка записи: Размер аудиофайла 0 байт. Проверьте разрешение микрофона!");
+                return; // Останавливаем отправку, чтобы избежать 422 ошибки
+            }
             const audioBlob = new Blob(audioChunks, { type: 'audio/ogg; codecs=opus' }); // Изменил mp3 на ogg (лучше для браузеров)
             
             const formData = new FormData();
