@@ -168,15 +168,7 @@
         const mode = urlParams.get('mode');
         let currentQuestion = "";
 
-        if (mode === 'game') {
-            document.getElementById('screen-lobby').classList.remove('active');
-            document.getElementById('screen-game').classList.add('active');
-            setupGame();
-        } else if (mode === 'search') {
-            // Для тестирования анимации поиска
-            document.getElementById('screen-lobby').classList.remove('active');
-            document.getElementById('screen-search').classList.add('active');
-        }
+
 
         function startSearching() {
             // 🟢 ВРЕМЕННЫЙ ХАК ДЛЯ ТЕСТА
