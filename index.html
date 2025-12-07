@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
@@ -5,33 +6,9 @@
     <title>SIX</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link rel="stylesheet" href="style.css"> <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800&display=swap" rel="stylesheet">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SIX | UNMUTE</title>
-    <link rel="stylesheet" href="style.css"> 
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800&display=swap"> 
     <style>
         /* Применяем новый шрифт к body */
         body { font-family: 'Orbitron', sans-serif; } 
-        /* * Применяем новый шрифт к body */
-        body { font-family: 'Orbitron', sans-serif; }
-
-        /* ВАШИ СТИЛИ ДЛЯ СКРЫТИЯ/ПОКАЗА ЭКРАНОВ */
-        .screen { display: none; }
-        .screen.active { display: block; }
-        .recording { background-color: #ff004c !important; }
-        .blurred { filter: blur(10px); }
-        .unblurred { filter: none; }
-        
-        /* ВРЕМЕННЫЕ СТИЛИ ДЛЯ ТЕСТА КНОПОК */
-        .big-btn { 
-            padding: 15px 30px; 
-            background: #00ff88; 
-            color: #0b0b14; 
-            border: none; 
-            cursor: pointer; 
-            font-size: 1.2em;
-            margin-top: 20px;
-        }
     </style>
 </head>
 <body>
@@ -45,7 +22,6 @@
             <div class="online-tag">🟢 1,240 Online</div>
             <button class="big-btn" onclick="startSearching()">START</button>
             <div style="margin-top: 30px; opacity: 0.6; font-size: 12px;">Баланс: <b id="user-balance">100 🪙</b></div>
-            <div style="margin-top: 30px; opacity: 0.6; font-size: 12px;">Баланс: <b id="user-balance">100</b> ЧИПСОВ</div>
         </div>
         <div class="bottom-nav">
             <div class="nav-item active">🏠</div>
@@ -61,18 +37,11 @@
             <style>@keyframes spin { to { transform: rotate(360deg); } }</style>
             <div>Ищем пару...</div>
         </div>
-            <div class="nav-item active">🔥</div>
-            <div class="nav-item" onclick="buyPack()">💰</div>
-            </div>
     </div>
 
-    
     <div id="screen-game" class="screen">
         <div class="game-header"><span>TABLE #1</span><span id="game-timer">00:05</span></div>
-        <div id="top-bar">Таймер: <span id="game-timer">00:15</span></div>
-        <div class="player-card" id="opponent-avatar"></div>
-        <div id="opponent-name"></div>
-
+        
         <div class="top-spotlight" id="top-bar">
             <div class="q-content" id="q-box-content">
                 <div class="q-label">РАУНД 1</div>
@@ -83,11 +52,8 @@
                 <div class="wave-visual"><div class="wave-fill"></div></div>
                 <div style="font-size:12px; font-weight:bold;">0:15</div>
             </div>
-        <div id="q-box-content">
-            <p>Вопрос:</p>
-            <h2 id="q-text-val">Загрузка...</h2>
         </div>
-
+        
         <div class="center-wrapper"> 
             <div class="table-grid">
                 <div class="player-card team-left has-voice" onclick="voteFor('Аня')">
@@ -140,7 +106,6 @@
                 <div class="keyboard-btn center-kb" onclick="alert('Чат пока в разработке!')">
                     <svg class="kb-icon" viewBox="0 0 24 24"><path d="M20 5H4c-1.1 0-1.99.9-1.99 2L2 17c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm-9 3h2v2h-2V8zm0 3h2v2h-2v-2zM8 8h2v2H8V8zm0 3h2v2H8v-2zm-1 2H5v-2h2v2zm0-3H5V8h2v2zm9 7H8v-2h8v2zm0-4h-2v-2h2v2zm0-3h-2V8h2v2zm3 3h-2v-2h2v2zm0-3h-2V8h2v2z"/></svg>
                 </div>
-        <div id="player-box-content" style="display: none;">
             </div>
 
             <div class="side-col right">
@@ -163,10 +128,6 @@
             <div class="vote-title">КТО ЗАЦЕПИЛ? ❤️</div>
             <div style="color:#888; margin-bottom:20px;">Тапай на фото</div>
             <button class="skip-btn" onclick="skipVote()">НИКТО (СКИП)</button>
-        <div id="controls">
-            <button id="mic-btn" onclick="toggleRecording()">🎤</button>
-            <button onclick="sendGift('ice')">🧊</button>
-            <button onclick="sendGift('fire')">🔥</button>
         </div>
     </div>
 
@@ -181,50 +142,26 @@
     </div>
 
     <script>
-        // =================================================================
-        //                 КОНФИГУРАЦИЯ И ПЕРЕМЕННЫЕ
-        // =================================================================
         let tg = window.Telegram.WebApp;
         tg.expand();
 
         // 🟢 СИСТЕМНЫЕ НАСТРОЙКИ (Цвет шапки)
-        // 🟢 СИСТЕМНЫЕ НАСТРОЙКИ TG
         tg.setHeaderColor('#0b0b14'); 
         tg.setBackgroundColor('#0b0b14'); 
 
         // --- 🟢 НОВЫЕ КОНСТАНТЫ ДЛЯ АУДИО (Обязательно замените USER_ID) ---
         const USER_ID = 726765325; // ⬅️ ЗАМЕНИТЕ ЭТО НА ВАШ ТЕСТОВЫЙ Telegram USER ID
         // 🔒 HTTPS АДРЕС ВАШЕГО API
-        // --- 🔒 БЕЗОПАСНЫЕ КОНСТАНТЫ API ---
-        const USER_ID = 123456789; // ⬅️ ОБЯЗАТЕЛЬНО ЗАМЕНИТЕ ЭТО НА ВАШ ТЕСТОВЫЙ Telegram USER ID
         const UPLOAD_URL = 'https://api.sixapp.online/audio/upload';
-
+        
         // ----------------------------------------------------
 
         // Переменные для существующей логики
-        // Общие переменные
         const u = tg.initDataUnsafe.user;
         const myPhoto = (u && u.photo_url) ? u.photo_url : "";
-        
-        let currentQuestion = "";
-        let isRecording = false;
-        let mediaRecorder; 
-        let audioChunks = []; 
-        let stream;
-        
-        // --- Получение элементов DOM (если они используются) ---
-        // const startButton = document.getElementById('startRecord'); // (Удалены из UI)
-        // const stopButton = document.getElementById('stopRecord'); // (Удалены из UI)
-
-        // =================================================================
-        //             ЛОГИКА ЗАГРУЗКИ (INITIALIZATION)
-        // =================================================================
-
         if (myPhoto) {
             document.getElementById('my-avatar').style.backgroundImage = `url('${myPhoto}')`;
             document.getElementById('final-my-ava').style.backgroundImage = `url('${myPhoto}')`;
-            // document.getElementById('my-avatar').style.backgroundImage = `url('${myPhoto}')`;
-            // document.getElementById('final-my-ava').style.backgroundImage = `url('${myPhoto}')`;
         }
 
         const urlParams = new URLSearchParams(window.location.search);
@@ -232,48 +169,27 @@
         let currentQuestion = "";
 
 
-        // Логика перехода по URL (для тестирования/бота)
-        if (mode === 'game') {
-            document.getElementById('screen-lobby').classList.remove('active');
-            document.getElementById('screen-game').classList.add('active');
-            setupGame();
-        } else if (mode === 'search') {
-            // Для тестирования анимации поиска
-            document.getElementById('screen-lobby').classList.remove('active');
-            document.getElementById('screen-search').classList.add('active');
-        }
-        
-        // -----------------------------------------------------------------
-        //                ОСНОВНЫЕ ФУНКЦИИ ПРИЛОЖЕНИЯ
-        // -----------------------------------------------------------------
 
-        // 🟢 ЛОГИКА КНОПКИ START (Начинает поиск/игру)
         function startSearching() {
             // 🟢 ВРЕМЕННЫЙ ХАК ДЛЯ ТЕСТА
             alert("КНОПКА РАБОТАЕТ");
             // Закомментируй следующие три строки, чтобы снова отправлять данные боту
-            // alert("КНОПКА РАБОТАЕТ"); // <--- УДАЛИТЬ ПОСЛЕ ТЕСТИРОВАНИЯ!
-
-            // 🟢 ВРЕМЕННЫЙ ХАК ДЛЯ ТЕСТА (Удалить, когда бот будет готов)
             document.getElementById('screen-lobby').classList.remove('active');
             document.getElementById('screen-game').classList.add('active');
             //setupGame();
-            setupGame();
             // КОНЕЦ ХАКА
 
-            
             tg.HapticFeedback.impactOccurred('heavy');
             // tg.sendData(JSON.stringify({action:"search", photo: myPhoto}));
-            // tg.sendData(JSON.stringify({action:"search", photo: myPhoto})); // Реальная логика
         }
 
         function setupGame() {
-            // ... (Ваша логика настройки игры) ...
             const q1 = decodeURIComponent(urlParams.get('q1') || "Расскажи свой самый стыдный поступок?");
             const q2 = decodeURIComponent(urlParams.get('q2') || "Твой идеальный выходной?");
-
-@@ -192,23 +146,14 @@
-
+            
+            const oppName = decodeURIComponent(urlParams.get('opp_name') || "Катя");
+            const oppPhoto = decodeURIComponent(urlParams.get('opp_photo') || "");
+            
             document.getElementById('opponent-name').innerText = oppName;
             const oppAva = document.getElementById('opponent-avatar');
             const finalOppAva = document.getElementById('final-opp-ava');
@@ -287,18 +203,30 @@
                 oppAva.style.backgroundImage = url;
                 finalOppAva.style.backgroundImage = url;
             }
-            // ... (другая логика настройки) ...
-
+            
             oppAva.classList.add('blurred');
             runRound(1, q1, q2);
         }
 
         function runRound(num, q1, q2) {
-            // ... (Ваша логика раундов) ...
             const text = (num === 1) ? q1 : q2;
             currentQuestion = text; 
-
-@@ -230,12 +175,11 @@
+            
+            document.getElementById('q-text-val').innerText = text;
+            
+            let timeLeft = 15; // 15 сек раунд для теста
+            const timer = document.getElementById('game-timer');
+            const interval = setInterval(() => {
+                timeLeft--;
+                timer.innerText = `00:${timeLeft < 10 ? '0'+timeLeft : timeLeft}`;
+                if (timeLeft <= 0) {
+                    clearInterval(interval);
+                    if (num === 1) {
+                        runRound(2, q1, q2);
+                    } else {
+                        endGame();
+                    }
+                }
             }, 1000);
         }
 
@@ -306,33 +234,30 @@
         let isRecording = false;
         let mediaRecorder; // Объявляем рекордер
         let audioChunks = []; // Массив для записи данных
-        // -----------------------------------------------------------------
-        //               ЛОГИКА ЗАПИСИ И ОТПРАВКИ АУДИО (ИСПРАВЛЕНО)
-        // -----------------------------------------------------------------
 
         // 🟢 НОВАЯ ЛОГИКА: ЗАПРОС РАЗРЕШЕНИЯ И УПРАВЛЕНИЕ ЗАПИСЬЮ
-        // 🟢 Управление записью (Вызывается кнопкой 🎤)
         async function toggleRecording() {
             const btn = document.getElementById('mic-btn');
             const qBox = document.getElementById('q-box-content');
-@@ -244,10 +188,9 @@
-
+            const playerBox = document.getElementById('player-box-content');
+            const gameScreen = document.getElementById('screen-game');
+            
             if (!isRecording) {
                 // --- СТАРТ ЗАПИСИ ---
                 
                 try {
                     // 1. Запрос доступа к микрофону
                     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                    stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-
+                    
                     mediaRecorder = new MediaRecorder(stream);
                     mediaRecorder.ondataavailable = (event) => {
-@@ -257,175 +200,89 @@
+                        audioChunks.push(event.data);
+                    };
+                    
                     mediaRecorder.onstop = sendAudioData; // Что делать, когда запись остановлена
-
+                    
                     audioChunks = [];
                     mediaRecorder.start(); // Начинаем запись
-                    mediaRecorder.start();
 
                     isRecording = true;
                     btn.classList.add('recording');
@@ -347,13 +272,11 @@
                         <div style="font-size:12px; color:red; letter-spacing:1px;">ЗАПИСЬ...</div>
                         <div id="recording-timer" style="font-size:12px;">0:00</div>
                     `;
-                    // ... (Обновление UI) ...
-
+                    
                 } catch (err) {
                     // Ошибка: Пользователь отказал в доступе
                     alert('Ошибка: Не удалось получить доступ к микрофону. Разрешите доступ в настройках браузера/приложения.');
                     console.error('Microphone access denied: ', err);
-                    alert('Ошибка: Не удалось получить доступ к микрофону. Разрешите доступ.');
                     return;
                 }
 
@@ -363,8 +286,7 @@
                 btn.classList.remove('recording');
                 gameScreen.classList.remove('recording-mode'); 
                 tg.HapticFeedback.notificationOccurred('success');
-                // ... (Обновление UI) ...
-
+                
                 if (mediaRecorder && mediaRecorder.state !== 'inactive') {
                     mediaRecorder.stop();
                 }
@@ -373,9 +295,8 @@
                 playerBox.innerHTML = `<div style="color:#00ff88; font-size:12px;">ОБРАБОТКА...</div>`;
             }
         }
-
+        
         // 🟢 НОВАЯ ФУНКЦИЯ: ОТПРАВКА АУДИО (ТЕПЕРЬ ПО HTTPS)
-        // 🟢 ОТПРАВКА АУДИОФАЙЛА ЧЕРЕЗ HTTPS НА VPS (ИСПРАВЛЕНО)
         function sendAudioData() {
             // 🛠️ ПРОВЕРКА 1: Проверяем, есть ли данные вообще
             console.log('Total recorded chunks:', audioChunks.length);
@@ -388,20 +309,12 @@
             if (audioBlob.size === 0) {
                 alert("❌ Ошибка записи: Размер аудиофайла 0 байт. Проверьте разрешение микрофона!");
                 return; // Останавливаем отправку, чтобы избежать 422 ошибки
-            // 🛠️ FIX: Проблема 422 - проверяем размер
-            if (audioChunks.length === 0) {
-                 alert("❌ Ошибка записи: Аудиофайл пуст.");
-                 return;
             }
             const audioBlob = new Blob(audioChunks, { type: 'audio/ogg; codecs=opus' }); // Изменил mp3 на ogg (лучше для браузеров)
             
-            // 🛠️ FIX: Убедитесь, что audioBlob объявляется только здесь (без SyntaxError)
-            const audioBlob = new Blob(audioChunks, { type: 'audio/ogg; codecs=opus' }); 
-
             const formData = new FormData();
             formData.append('audio_file', audioBlob, `voice_${Date.now()}.ogg`);
             formData.append('user_id', USER_ID); // Добавляем USER_ID для FastAPI
-            formData.append('user_id', USER_ID); // Передаем User ID
 
             fetch(UPLOAD_URL, {
                 method: 'POST',
@@ -414,12 +327,11 @@
                     playerBox.innerHTML = `<div style="color:red; font-size:12px;">❌ ОШИБКА СЕРВЕРА: ${response.status}</div>`;
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
-
+                
                 // Временно возвращаем UI к вопросу
                 playerBox.style.display = 'none';
                 document.getElementById('q-box-content').style.display = 'block';
 
-                // ... (Логика возврата UI) ...
                 return response.json();
             })
             .then(data => {
@@ -437,10 +349,6 @@
                 console.error('Upload failed:', error);
             });
         }
-        
-        // -----------------------------------------------------------------
-        //               ОСТАЛЬНЫЕ ФУНКЦИИ (Сохранены)
-        // -----------------------------------------------------------------
 
         // Ваши существующие функции
         function sendGift(type) {
@@ -451,7 +359,6 @@
             if(type === 'drink') name = "Угостить";
             if(type === 'spy') name = "Рентген";
             alert(`Выбрано: ${name}. Нажми на игрока!`);
-            // ...
         }
 
         function spotlightPlayer(name) {
@@ -468,7 +375,6 @@
                 playerBox.style.display = 'none';
                 document.getElementById('q-box-content').style.display = 'block';
             }, 3000);
-            // ...
         }
 
         function endGame() {
@@ -476,7 +382,6 @@
             document.getElementById('controls').style.display = 'none';
             document.getElementById('vote-screen').style.display = 'flex';
             document.querySelectorAll('.player-card').forEach(p => p.classList.add('highlight'));
-            // ...
         }
 
         function voteFor(name) {
@@ -506,7 +411,6 @@
                 document.getElementById('screen-game').classList.remove('active');
                 document.getElementById('match-overlay').classList.add('active');
             }, 1500);
-            // ...
         }
 
         
@@ -522,7 +426,7 @@
         document.getElementById('zoom-overlay').onclick = function() {
             this.classList.remove('active');
         };
-        // ... (Ваши функции showZoom, document.getElementById('zoom-overlay').onclick) ...
 
     </script>
 </body>
+</html>
