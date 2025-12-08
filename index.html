@@ -14,20 +14,24 @@
         .player-card { position: relative; }
         .notify-badge {
             position: absolute;
-            bottom: -5px; right: -5px;
-            width: 32px; height: 32px;
-            background: #ff0055; color: white;
+            bottom: -5px; 
+            right: -5px;
+            width: 30px; 
+            height: 30px;
+            background: #ff0055; 
+            color: white;
             border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
-            font-size: 16px;
+            font-size: 14px;
             border: 2px solid white;
-            box-shadow: 0 0 8px #ff0055;
-            z-index: 200; cursor: pointer;
-            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 0 5px #ff0055;
+            z-index: 100;
+            cursor: pointer;
+            animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
-        @keyframes popIn { from { transform: scale(0); } to { transform: scale(1); } }
+        @keyframes popIn { 0% { transform: scale(0); } 100% { transform: scale(1); } }
 
-        /* Лог (для отладки) */
+        /* Лог (можно скрыть display:none) */
         #debug-console {
             position: fixed; bottom: 0; left: 0; width: 100%; height: 60px;
             background: rgba(0,0,0,0.8); color: lime; font-size: 10px;
@@ -43,7 +47,7 @@
             z-index: 5000; cursor: pointer;
         }
         
-        /* Блюр */
+        /* Блюр (мягкий) */
         .blurred { filter: blur(8px) brightness(0.8); transition: filter 0.5s; }
     </style>
 </head>
@@ -158,7 +162,7 @@
         const UPLOAD_URL = 'https://api.sixapp.online/audio/upload';
         const SEARCH_URL = 'https://api.sixapp.online/search';
 
-        // --- ИДЕНТИФИКАЦИЯ (v5 - чтобы точно сбросить старое) ---
+        // ИДЕНТИФИКАЦИЯ
         const u = tg.initDataUnsafe.user;
         let USER_ID, myName = "Игрок", myPhoto = "";
 
@@ -180,41 +184,28 @@
         document.getElementById('my-name-label').innerText = myName;
         if (myPhoto) document.getElementById('my-avatar').style.backgroundImage = `url('${myPhoto}')`;
 
-        // Глобальные переменные
         let searchInterval = null;
         let currentPhase = "";
         let currentAudio = null;
-        let isGameEnding = false; 
 
-        // 🟢 ФУНКЦИЯ ПОЛНОГО ВЫХОДА
+        // ВЫХОД
         function forceExit() {
             log("🛑 EXIT");
-            if (searchInterval) {
-                clearInterval(searchInterval);
-                searchInterval = null;
-            }
+            if (searchInterval) clearInterval(searchInterval);
             if (currentAudio) { currentAudio.pause(); currentAudio = null; }
-            
-            // Сброс UI
             document.getElementById('screen-game').classList.remove('active');
             document.getElementById('screen-search').classList.remove('active');
             document.getElementById('screen-lobby').classList.add('active');
-            
             currentPhase = "";
-            isGameEnding = false;
         }
 
-        // 🟢 СТАРТ
-        function startSearching() {
+        async function startSearching() {
             tg.HapticFeedback.impactOccurred('heavy');
             document.getElementById('screen-lobby').classList.remove('active');
             document.getElementById('screen-search').classList.add('active');
-            
-            isGameEnding = false;
             startPolling();
         }
 
-        // 🟢 ОПРОС СЕРВЕРА
         function startPolling() {
             if (searchInterval) clearInterval(searchInterval);
 
@@ -228,7 +219,6 @@
                     const data = await response.json();
                     
                     if (data.status === 'in_game') {
-                        // Переход на экран игры
                         if (!document.getElementById('screen-game').classList.contains('active')) {
                             document.getElementById('screen-search').classList.remove('active');
                             document.getElementById('screen-game').classList.add('active');
@@ -236,30 +226,25 @@
                         updateGameUI(data);
                     }
                     else if (data.status === 'searching') {
-                        // Если мы были в игре, но сервер сказал "searching" -> ИГРА ЗАКОНЧИЛАСЬ
+                        // Если выкинуло из игры
                         if (document.getElementById('screen-game').classList.contains('active')) {
-                             if (!isGameEnding) {
-                                 isGameEnding = true;
-                                 log("Game deleted by server.");
-                                 alert("Игра завершена!");
-                                 forceExit();
-                             }
+                             alert("Игра завершена!");
+                             forceExit();
                         }
                     }
                 } catch (error) { console.error("Poll err"); }
             }, 1000); 
         }
 
-        // 🟢 ОБНОВЛЕНИЕ ЭКРАНА
         function updateGameUI(data) {
-            // 1. Таймер (Исправлено 00:09)
+            // 1. Таймер (исправлен 00:09)
             const timer = document.getElementById('game-timer');
             let tl = data.time_left;
             timer.innerText = `00:${tl < 10 ? '0'+tl : tl}`;
             
             document.getElementById('q-text-val').innerText = data.question;
 
-            // 2. Раунды
+            // 2. Раунды (если сервер шлет)
             if (data.round) document.querySelector('.q-label').innerText = 'РАУНД ' + data.round;
 
             // 3. Соперник
@@ -278,34 +263,28 @@
                 log(`ФАЗА: ${currentPhase}`);
                 
                 if (currentPhase === 'recording') {
-                    // Показываем микрофон и подарки
-                    document.getElementById('controls').style.display = 'flex'; 
+                    // Вкл микрофон
+                    document.getElementById('mic-wrapper').style.visibility = 'visible'; 
+                    document.getElementById('controls').style.opacity = '1';
                     document.getElementById('player-box-content').style.display = 'none';
                     document.getElementById('q-box-content').style.display = 'block';
                     
-                    // Убираем старые значки
+                    // Чистим старые значки
                     document.querySelectorAll('.notify-badge').forEach(e => e.remove());
                 } 
                 else if (currentPhase === 'listening') {
-                    // Прячем меню
-                    document.getElementById('controls').style.display = 'none'; 
+                    // Выкл микрофон
+                    document.getElementById('mic-wrapper').style.visibility = 'hidden';
                     tg.HapticFeedback.notificationOccurred('warning');
                 }
                 else if (currentPhase === 'voting') {
-                     // Пока просто выходим в меню (чтобы не было 999 сек)
-                     if (!isGameEnding) {
-                         isGameEnding = true;
-                         alert("Время вышло! (Финал)");
-                         forceExit();
-                     }
+                    forceExit(); // Временно выходим в меню
                 }
             }
 
-            // 5. Значок Play (Проверка, чтобы не мигал)
+            // 5. Значок Play (НЕ МИГАЕТ)
             if (data.phase === 'listening' && data.opponent_audio) {
                  const oppCard = document.getElementById('opponent-card');
-                 
-                 // Если значка еще нет - добавляем
                  if (!oppCard.querySelector('.notify-badge')) {
                      const badge = document.createElement('div');
                      badge.className = 'notify-badge';
@@ -313,12 +292,12 @@
                      oppCard.onclick = function() { playOpponentAudio(data.opponent_audio); };
                      oppCard.appendChild(badge);
                      tg.HapticFeedback.notificationOccurred('success');
-                     log("Значок Play добавлен");
+                     log("Badge added");
                  }
             }
         }
 
-        // 🟢 АУДИО
+        // АУДИО
         function playOpponentAudio(audioUrl) {
              log("Play: " + audioUrl);
              tg.HapticFeedback.impactOccurred('medium');
@@ -335,9 +314,7 @@
             `;
 
             currentAudio = new Audio(audioUrl);
-            currentAudio.play().catch(e => {
-                alert("Ошибка воспроизведения: " + e);
-            });
+            currentAudio.play().catch(e => log(e));
             currentAudio.onended = function() { stopAudio(); };
         }
 
@@ -347,7 +324,7 @@
             document.getElementById('q-box-content').style.display = 'block';
         }
 
-        // 🟢 ЗАПИСЬ
+        // ЗАПИСЬ
         let isRecording = false;
         let mediaRecorder; 
         let audioChunks = []; 
@@ -367,7 +344,7 @@
                     isRecording = true;
                     btn.classList.add('recording');
                     tg.HapticFeedback.impactOccurred('medium');
-                } catch (err) { alert('Нет микрофона'); }
+                } catch (err) { alert('Mic Error'); }
             } else {
                 isRecording = false;
                 btn.classList.remove('recording');
@@ -392,9 +369,8 @@
             .then(data => {
                 pBox.style.display = 'none';
                 document.getElementById('q-box-content').style.display = 'block';
-                log("Upload OK");
             })
-            .catch(err => alert('Err: ' + err));
+            .catch(err => alert('Upload Error'));
         }
 
         function sendGift(type) { tg.HapticFeedback.impactOccurred('medium'); alert(`Подарок: ${type}`); }
