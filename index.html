@@ -200,47 +200,58 @@
 
         // --- 2. ОПРОС СЕРВЕРА (ПУЛЬС) ---
         function startPolling() {
-            // Каждые 2 секунды спрашиваем: "Нашлась пара?"
             searchInterval = setInterval(async () => {
                 try {
                     const response = await fetch(SEARCH_URL, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ user_id: USER_ID, name: myName })
+                        // Отправляем на сервер и ФОТО тоже, чтобы он мог передать его сопернику
+                        body: JSON.stringify({ user_id: USER_ID, name: myName, photo: myPhoto })
                     });
                     const data = await response.json();
                     
-                    console.log("Status:", data.status);
-
                     // ЕСЛИ ПАРА НАЙДЕНА
-                    if (data.status === 'matched' || data.status === 'matched_wait') {
-                        clearInterval(searchInterval); // Останавливаем таймер
+                    if (data.status === 'matched') {
+                        clearInterval(searchInterval);
                         
-                        // Переход в игру
                         document.getElementById('screen-search').classList.remove('active');
                         document.getElementById('screen-game').classList.add('active');
                         
-                        setupGame(); // Настраиваем игру
+                        // 🆕 ПЕРЕДАЕМ ДАННЫЕ С СЕРВЕРА В ИГРУ
+                        setupGame(data.opponent_name, data.opponent_photo);
+                        
                         tg.HapticFeedback.notificationOccurred('success');
                     }
                 } catch (error) {
-                    console.error("Ошибка связи:", error);
+                    console.error("Polling error:", error);
                 }
             }, 2000); 
         }
 
         // --- 3. НАСТРОЙКА ИГРЫ ---
-        function setupGame() {
-            // Тут пока заглушки, позже будем брать данные с сервера
-            const oppNameEl = document.getElementById('opponent-name');
-            if (oppNameEl) oppNameEl.innerText = "Инкогнито";
+        // 🆕 Теперь функция принимает реальные данные
+        function setupGame(oppName, oppPhoto) {
             
+            // 1. Ставим Имя
+            const oppNameEl = document.getElementById('opponent-name');
+            if (oppNameEl) oppNameEl.innerText = oppName || "Игрок";
+            
+            // 2. Ставим Фото (с блюром)
             const oppAva = document.getElementById('opponent-avatar');
+            const finalOppAva = document.getElementById('final-opp-ava'); // Для финала
+            
+            // Если фото нет, ставим заглушку
+            const photoUrl = (oppPhoto && oppPhoto !== "null") ? oppPhoto : 'https://randomuser.me/api/portraits/lego/1.jpg';
+            
             if (oppAva) {
-                oppAva.classList.add('blurred');
-                oppAva.style.backgroundImage = `url('https://randomuser.me/api/portraits/women/20.jpg')`;
+                oppAva.classList.add('blurred'); // Важно: блюр включен
+                oppAva.style.backgroundImage = `url('${photoUrl}')`;
+            }
+            if (finalOppAva) {
+                finalOppAva.style.backgroundImage = `url('${photoUrl}')`;
             }
             
+            // Запуск раунда
             runRound(1, "Твой самый стыдный поступок?", "Твой идеальный выходной?");
         }
 
