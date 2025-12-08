@@ -5,81 +5,48 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>SIX</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    
     <link rel="stylesheet" href="style.css"> 
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800&display=swap" rel="stylesheet">
-    
     <style>
         body { font-family: 'Orbitron', sans-serif; }
-        
-        /* ЛОГИ (Черная полоса снизу) */
-        #debug-console {
-            position: fixed; bottom: 0; left: 0; width: 100%; height: 60px;
-            background: rgba(0,0,0,0.85); color: #00ff00; font-size: 10px;
-            font-family: monospace; overflow-y: scroll; z-index: 10000;
-            padding: 5px; pointer-events: none; border-top: 2px solid #00ff00;
+        /* Делаем карточку "базой" для позиционирования */
+        .player-card {
+            position: relative; 
         }
 
-        /* КРАСИВЫЙ ЛЕГКИЙ БЛЮР */
-        .blurred {
-            filter: blur(8px) brightness(0.8) !important;
-            transition: filter 1s ease;
-        }
-        
-        .unblurred {
-            filter: blur(0px) !important;
-        }
-
-        /* ЗНАЧОК PLAY (Четкий, поверх всего) */
+        /* Стиль кнопки PLAY (маленькая, в углу) */
         .notify-badge {
             position: absolute;
             bottom: -5px; 
             right: -5px;
-            width: 30px; height: 30px;
+            width: 30px; 
+            height: 30px;
             background: #ff0055; 
             color: white;
             border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
-            font-size: 16px;
+            font-size: 14px;
             border: 2px solid white;
-            box-shadow: 0 0 10px #ff0055;
-            z-index: 100; 
-            animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 0 5px #ff0055;
+            z-index: 100;
+            cursor: pointer;
         }
-
-        @keyframes popIn {
-            0% { transform: scale(0); }
-            100% { transform: scale(1); }
-        }
-
-        .force-exit-btn {
-            position: absolute; top: 10px; left: 10px;
-            background: rgba(255, 0, 0, 0.5); color: white;
-            border: 1px solid red; font-size: 10px; padding: 5px;
-            z-index: 5000; cursor: pointer;
-        }
-
-        /* Исправление для кликабельности */
-        .player-card { position: relative; }
     </style>
 </head>
 <body>
 
-    <div id="debug-console">Ожидание...</div>
-
     <div id="screen-lobby" class="screen active">
         <div class="lobby-container">
             <div class="logo">SIX</div>
-            <div class="online-tag">🟢 ONLINE</div>
+            <div class="online-tag">🟢 1,240 Online</div>
             <button class="big-btn" onclick="startSearching()">START</button>
             <div style="margin-top: 30px; opacity: 0.6; font-size: 12px;">Баланс: <b id="user-balance">100 🪙</b></div>
-            <div style="margin-top:10px; font-size:10px; color:#666;" id="debug-id"></div>
-            <div style="margin-top:5px; font-size:10px; color:#666;" id="my-name-label"></div>
+            <div style="margin-top:10px; font-size:10px; color:#444;" id="debug-id"></div>
         </div>
         <div class="bottom-nav">
             <div class="nav-item active">🏠</div>
             <div class="nav-item">💬</div>
-            <div class="nav-item">🛍</div>
+            <div class="nav-item" onclick="buyPack()">🛍</div>
             <div class="nav-item">👤</div>
         </div>
     </div>
@@ -89,13 +56,11 @@
             <div style="width:80px; height:80px; border:4px solid var(--neon-blue); border-radius:50%; border-top-color:transparent; animation:spin 1s linear infinite; margin-bottom:20px;"></div>
             <style>@keyframes spin { to { transform: rotate(360deg); } }</style>
             <div>Ищем пару...</div>
-            <button onclick="forceExit()" style="margin-top:20px; background:none; border:1px solid #444; color:#666;">ОТМЕНА</button>
+            <div style="font-size: 10px; color: #666; margin-top: 10px;">Подбираем по рейтингу</div>
         </div>
     </div>
 
     <div id="screen-game" class="screen">
-        <button class="force-exit-btn" onclick="forceExit()">🚪 ВЫЙТИ</button>
-
         <div class="game-header"><span>TABLE #1</span><span id="game-timer">00:00</span></div>
         
         <div class="top-spotlight" id="top-bar">
@@ -103,7 +68,7 @@
                 <div class="q-label">РАУНД 1</div>
                 <div class="q-text" id="q-text-val">Загрузка...</div>
             </div>
-            <div class="player-content" id="player-box-content" style="display:none;">
+            <div class="player-content" id="player-box-content">
                 <div class="play-btn">▶️</div>
                 <div class="wave-visual"><div class="wave-fill"></div></div>
                 <div style="font-size:12px; font-weight:bold;">0:15</div>
@@ -112,27 +77,41 @@
         
         <div class="center-wrapper"> 
             <div class="table-grid">
-                <div class="player-card team-left"><div class="avatar" style="background-image:url('https://randomuser.me/api/portraits/women/44.jpg')"></div><div class="name-tag">Аня</div></div>
+                <div class="player-card team-left" onclick="voteFor('Аня')">
+                    <div class="avatar" style="background-image:url('https://randomuser.me/api/portraits/women/44.jpg')">
+                        <div class="notify-badge">🎤</div>
+                    </div>
+                    <div class="name-tag">Аня</div>
+                </div>
                 
-                <div class="player-card team-left" id="opponent-card">
+                <div class="player-card team-left" onclick="voteFor('Оппонент')">
                     <div class="avatar" id="opponent-avatar"></div>
                     <div class="name-tag" id="opponent-name" style="color:var(--neon-pink)">...</div>
                 </div>
 
-                <div class="player-card team-left"><div class="avatar" style="background-image:url('https://randomuser.me/api/portraits/women/68.jpg')"></div><div class="name-tag">Оля</div></div>
-                <div class="player-card team-right"><div class="avatar" style="background-image:url('https://randomuser.me/api/portraits/men/32.jpg')"></div><div class="name-tag">Макс</div></div>
+                <div class="player-card team-left">
+                    <div class="avatar" style="background-image:url('https://randomuser.me/api/portraits/women/68.jpg')"></div>
+                    <div class="name-tag">Оля</div>
+                </div>
+
+                <div class="player-card team-right">
+                    <div class="avatar" style="background-image:url('https://randomuser.me/api/portraits/men/32.jpg')"></div>
+                    <div class="name-tag">Макс</div>
+                </div>
                 
                 <div class="player-card team-right">
                     <div class="avatar" id="my-avatar"></div>
-                    <div class="name-tag" style="color:var(--neon-blue)">ВЫ</div>
+                    <div class="name-tag" id="my-name-label" style="color:var(--neon-blue)">ВЫ</div>
                 </div>
 
-                <div class="player-card team-right"><div class="avatar" style="background-image:url('https://randomuser.me/api/portraits/men/86.jpg')"></div><div class="name-tag">Дэн</div></div>
+                <div class="player-card team-right">
+                    <div class="avatar" style="background-image:url('https://randomuser.me/api/portraits/men/86.jpg')"></div>
+                    <div class="name-tag">Дэн</div>
+                </div>
             </div>
         </div>
 
         <div class="controls-container" id="controls">
-            
             <div class="side-col left">
                 <div class="gift-btn" onclick="sendGift('ice')">
                     <svg class="gift-icon" viewBox="0 0 24 24" style="fill:#00f3ff;"><path d="M12,2L4,6v12l8,4l8-4V6L12,2z M12,18.5L6.5,15.8V8.2L12,11V18.5z M12,9L6.5,6.3L12,3.5l5.5,2.8L12,9z M17.5,15.8 L12,18.5V11l5.5-2.8V15.8z"/></svg>
@@ -144,7 +123,7 @@
                 </div>
             </div>
 
-            <div class="mic-wrapper" id="mic-wrapper">
+            <div class="mic-wrapper">
                 <button class="mic-btn" id="mic-btn" onclick="toggleRecording()">
                     <svg class="mic-icon" viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/><path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
                 </button>
@@ -160,8 +139,26 @@
                     <div class="gift-price">50</div>
                 </div>
             </div>
-            
         </div>
+
+        <div class="vote-layer" id="vote-screen">
+            <div class="vote-title">КТО ЗАЦЕПИЛ? ❤️</div>
+            <button class="skip-btn" onclick="skipVote()">НИКТО (СКИП)</button>
+        </div>
+    </div>
+
+    <div id="match-overlay" class="screen">
+        <div class="match-title">IT'S A MATCH!</div>
+        <div class="match-avatars">
+            <div class="match-ava" id="final-my-ava"></div>
+            <div style="font-size:30px">⚡️</div>
+            <div class="match-ava" id="final-opp-ava"></div>
+        </div>
+        <button class="match-btn" onclick="closeApp()">В ЧАТ</button>
+    </div>
+
+    <div id="zoom-overlay" class="screen" style="background:rgba(0,0,0,0.9); justify-content:center; align-items:center;" onclick="this.classList.remove('active')">
+        <img id="zoom-image" style="max-width:90%; max-height:80%; border-radius:20px;">
     </div>
 
     <script>
@@ -169,37 +166,34 @@
         tg.expand();
         tg.setHeaderColor('#0b0b14'); tg.setBackgroundColor('#0b0b14');
 
-        function log(msg) {
-            const el = document.getElementById('debug-console');
-            el.innerText = msg + "\n" + el.innerText;
-            console.log(msg);
-        }
-
         const UPLOAD_URL = 'https://api.sixapp.online/audio/upload';
         const SEARCH_URL = 'https://api.sixapp.online/search';
 
+        // --- 🆔 ИДЕНТИФИКАЦИЯ ---
         const u = tg.initDataUnsafe.user;
         let USER_ID;
         let myName = "Игрок"; 
         let myPhoto = "";
 
+        // Случайные имена
         const testNames = ["Алекс", "Макс", "Дэн", "Оля", "Катя", "Ник", "Лиза"];
         const randomNum = Math.floor(Math.random() * 999);
         const randomName = testNames[Math.floor(Math.random() * testNames.length)] + " #" + randomNum;
 
         if (u && u.id) {
-            log(`TG User: ${u.first_name} (${u.id})`);
+            console.log("Telegram User:", u);
             USER_ID = u.id;
             myName = u.first_name || "Аноним";
             myPhoto = u.photo_url || "";
         } else {
-            log("Browser Mode");
+            // Тест в браузере
             let storedId = localStorage.getItem('six_real_id_v3'); 
             if (!storedId) {
                 storedId = Math.floor(Math.random() * 1000000) + 1;
                 localStorage.setItem('six_real_id_v3', storedId);
             }
             USER_ID = parseInt(storedId);
+            
             let storedName = localStorage.getItem('six_test_name_v3');
             if (!storedName) {
                 storedName = randomName;
@@ -208,29 +202,25 @@
             myName = storedName;
         }
 
-        document.getElementById('debug-id').innerText = "ID: " + USER_ID;
-        document.getElementById('my-name-label').innerText = myName;
-
+        // UI Инициализация
+        const debugEl = document.getElementById('debug-id');
+        if (debugEl) debugEl.innerText = "ID: " + USER_ID;
+        const myNameLabel = document.getElementById('my-name-label');
+        if (myNameLabel) myNameLabel.innerText = myName;
         if (myPhoto) {
-            document.getElementById('my-avatar').style.backgroundImage = `url('${myPhoto}')`;
+            const myAva = document.getElementById('my-avatar');
+            const finalMyAva = document.getElementById('final-my-ava');
+            if (myAva) myAva.style.backgroundImage = `url('${myPhoto}')`;
+            if (finalMyAva) finalMyAva.style.backgroundImage = `url('${myPhoto}')`;
         }
 
         let searchInterval;
         let currentPhase = "";
-        let currentAudio = null;
 
-        function forceExit() {
-            log("🚪 ВЫХОД");
-            clearInterval(searchInterval);
-            document.getElementById('screen-game').classList.remove('active');
-            document.getElementById('screen-search').classList.remove('active');
-            document.getElementById('screen-lobby').classList.add('active');
-            if (currentAudio) { currentAudio.pause(); currentAudio = null; }
-            currentPhase = "";
-        }
-
+        // 🔥 НОВОЕ: ПРОВЕРКА ПРИ ЗАПУСКЕ (АВТО-РЕКОННЕКТ)
         async function checkActiveGame() {
             try {
+                // Сразу спрашиваем сервер: "Я в игре?"
                 const response = await fetch(SEARCH_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -239,14 +229,20 @@
                 const data = await response.json();
 
                 if (data.status === 'in_game') {
-                    log("♻️ RECONNECT...");
+                    console.log("♻️ Обнаружена активная игра! Реконнект...");
+                    // Сразу перекидываем в игру, минуя лобби
                     document.getElementById('screen-lobby').classList.remove('active');
                     document.getElementById('screen-game').classList.add('active');
+                    
+                    // Запускаем опрос (чтобы таймер пошел)
                     startPolling();
                 }
-            } catch (e) { log("Check err: " + e); }
+            } catch (e) {
+                console.error("Ошибка авто-входа:", e);
+            }
         }
 
+        // --- 1. СТАРТ (Ручной) ---
         async function startSearching() {
             tg.HapticFeedback.impactOccurred('heavy');
             document.getElementById('screen-lobby').classList.remove('active');
@@ -254,7 +250,9 @@
             startPolling();
         }
 
+        // --- 2. ОПРОС ---
         function startPolling() {
+            // Если уже запущен, не дублируем
             if (searchInterval) clearInterval(searchInterval);
 
             searchInterval = setInterval(async () => {
@@ -270,24 +268,44 @@
                         if (!document.getElementById('screen-game').classList.contains('active')) {
                             document.getElementById('screen-search').classList.remove('active');
                             document.getElementById('screen-game').classList.add('active');
+                            tg.HapticFeedback.notificationOccurred('success');
                         }
                         updateGameUI(data);
                     }
                     else if (data.status === 'searching') {
+                        // Если мы были в игре, но сервер сказал "searching" -> ИГРА ОКОНЧЕНА
                         if (document.getElementById('screen-game').classList.contains('active')) {
-                             log("Игра удалена.");
-                             forceExit();
+                             console.log("Игра завершена сервером.");
+                             
+                             // 1. Убираем экран игры
+                             document.getElementById('screen-game').classList.remove('active');
+                             // 2. Показываем лобби
+                             document.getElementById('screen-lobby').classList.add('active');
+                             
+                             // 3. Останавливаем опрос (чтобы не спамить)
+                             clearInterval(searchInterval);
+                             
+                             // 4. Сбрасываем переменные
+                             currentPhase = "";
+                             alert("Игра окончена! Спасибо.");
                         }
                     }
-                } catch (error) { console.error("Poll err"); }
+
+                } catch (error) { console.error("Ошибка:", error); }
             }, 1000); 
         }
 
+        // --- 3. ОБНОВЛЕНИЕ UI ---
         function updateGameUI(data) {
+            // 1. Таймер
             const timer = document.getElementById('game-timer');
-            timer.innerText = `00:${data.time_left}`;
+            const tl = data.time_left;
+            timer.innerText = `00:${tl < 10 ? '0'+tl : tl}`;
+            
+            // 2. Вопрос
             document.getElementById('q-text-val').innerText = data.question;
 
+            // 3. Соперник (Имя/Фото)
             const oppNameEl = document.getElementById('opponent-name');
             if (oppNameEl.innerText !== data.opponent_name) {
                 oppNameEl.innerText = data.opponent_name;
@@ -297,44 +315,58 @@
                 oppAva.classList.add('blurred');
             }
 
+            // 4. Смена Фаз (Прячем/Показываем микрофон)
             if (currentPhase !== data.phase) {
                 currentPhase = data.phase;
-                log(`ФАЗА: ${currentPhase}`);
                 
                 if (currentPhase === 'recording') {
-                    // Показываем нижнюю панель
-                    document.getElementById('controls').style.display = 'flex';
+                    // Показываем панель управления (твое нижнее меню)
+                    document.getElementById('controls').style.display = 'flex'; 
                     document.getElementById('player-box-content').style.display = 'none';
                     document.getElementById('q-box-content').style.display = 'block';
+                    // Удаляем старые значки play
                     document.querySelectorAll('.notify-badge').forEach(e => e.remove());
                 } 
                 else if (currentPhase === 'listening') {
-                    // Прячем нижнюю панель (или только микрофон)
-                    // Для красоты скроем кнопку микрофона, но подарки можно оставить
-                    document.getElementById('mic-wrapper').style.visibility = 'hidden'; 
+                    // Прячем микрофон (чтобы не жали)
+                    document.getElementById('controls').style.display = 'none'; 
                     tg.HapticFeedback.notificationOccurred('warning');
                 }
             }
 
+            // 5. РИСУЕМ ЗНАЧОК PLAY (Если есть аудио)
             if (data.phase === 'listening' && data.opponent_audio) {
-                 const oppCard = document.getElementById('opponent-card');
+                 const oppAvatarDiv = document.getElementById('opponent-avatar');
+                 // Ищем родителя (карточку), чтобы прикрепить значок к ней
+                 const oppCard = oppAvatarDiv.parentElement; 
+                 
                  if (!oppCard.querySelector('.notify-badge')) {
-                     log("✅ КНОПКА PLAY!");
                      const badge = document.createElement('div');
                      badge.className = 'notify-badge';
                      badge.innerText = '▶️';
-                     oppCard.onclick = function() { playOpponentAudio(data.opponent_audio); };
+                     
+                     // ВАЖНО: Передаем ссылку на аудио
+                     oppCard.onclick = function() { 
+                         playOpponentAudio(data.opponent_audio); 
+                     };
+                     
+                     // Добавляем значок ВНУТРЬ карточки, поверх аватарки
                      oppCard.appendChild(badge);
                      tg.HapticFeedback.notificationOccurred('success');
                  }
             }
         }
 
+        let currentAudio = null;
+
         function playOpponentAudio(audioUrl) {
-             log("Play: " + audioUrl);
+             console.log("Играем:", audioUrl);
              tg.HapticFeedback.impactOccurred('medium');
+             
+             // Если уже играет - стоп
              if (currentAudio) { currentAudio.pause(); currentAudio = null; }
 
+             // Визуал плеера
              document.getElementById('q-box-content').style.display = 'none';
              const pBox = document.getElementById('player-box-content');
              pBox.style.display = 'flex';
@@ -343,8 +375,12 @@
                 <div style="font-size:10px; color:var(--neon-pink); margin-right:5px;">СОПЕРНИК</div>
                 <div class="wave-visual"><div class="wave-fill" style="animation: fillWave 5s linear forwards;"></div></div>
             `;
+
+            // Запуск реального звука
             currentAudio = new Audio(audioUrl);
-            currentAudio.play().catch(e => { log("Err: " + e); });
+            currentAudio.play().catch(e => alert("Ошибка звука: " + e));
+            
+            // Когда закончится
             currentAudio.onended = function() { stopAudio(); };
         }
 
@@ -354,12 +390,16 @@
             document.getElementById('q-box-content').style.display = 'block';
         }
 
+        // --- ЗАПИСЬ ---
         let isRecording = false;
         let mediaRecorder; 
         let audioChunks = []; 
 
         async function toggleRecording() {
-            if (currentPhase !== 'recording') return;
+            if (currentPhase !== 'recording') {
+                alert("Сейчас нельзя записывать!");
+                return;
+            }
             const btn = document.getElementById('mic-btn');
             const playerBox = document.getElementById('player-box-content');
             
@@ -379,13 +419,11 @@
                         playerBox.style.display = 'flex';
                         playerBox.innerHTML = `<div style="color:red; font-size:12px;">ЗАПИСЬ...</div>`;
                     }
-                    log("Mic ON");
                 } catch (err) { alert('Нет микрофона'); }
             } else {
                 isRecording = false;
                 btn.classList.remove('recording');
                 if (mediaRecorder) mediaRecorder.stop();
-                log("Mic OFF");
                 if(playerBox) playerBox.innerHTML = `<div style="color:#00ff88; font-size:12px;">ОТПРАВКА...</div>`;
             }
         }
@@ -400,13 +438,12 @@
             fetch(UPLOAD_URL, { method: 'POST', body: formData })
             .then(res => res.json())
             .then(data => {
-                log("Upload: " + data.status);
                 const pBox = document.getElementById('player-box-content');
                 const qBox = document.getElementById('q-box-content');
                 if (pBox) pBox.style.display = 'none';
                 if (qBox) qBox.style.display = 'block';
             })
-            .catch(err => log('Err: ' + err));
+            .catch(err => alert('Ошибка отправки: ' + err));
         }
 
         function sendGift(type) { tg.HapticFeedback.impactOccurred('medium'); alert(`Подарок: ${type}`); }
@@ -415,7 +452,9 @@
         function buyPack() { tg.sendData(JSON.stringify({action:"buy_pack"})); }
         function closeApp() { tg.close(); }
 
+        // 🔥 ЗАПУСК АВТО-ПРОВЕРКИ ПРИ ЗАГРУЗКЕ
         checkActiveGame();
+        
     </script>
 </body>
 </html>
