@@ -154,34 +154,38 @@
         // --- 🆔 ИДЕНТИФИКАЦИЯ И ДАННЫЕ ---
         const u = tg.initDataUnsafe.user;
         let USER_ID;
-        let myName = "Игрок"; // Значение по умолчанию
+        let myName = "Игрок"; 
         let myPhoto = "";
 
-        // 🔥 НОВОЕ: Случайные имена для теста (чтобы не быть "Игроком")
+        // Случайные имена (ТОЛЬКО если телеграм не отдал реальные)
         const testNames = ["Алекс", "Макс", "Дэн", "Оля", "Катя", "Ник", "Лиза"];
-        const randomName = testNames[Math.floor(Math.random() * testNames.length)] + " (Тест)";
+        const randomNum = Math.floor(Math.random() * 999);
+        const randomName = testNames[Math.floor(Math.random() * testNames.length)] + " #" + randomNum;
 
         if (u && u.id) {
-            // ✅ Если мы в Telegram - берем реальные данные
+            // ✅ ВАРИАНТ 1: ЗАШЛИ ЧЕРЕЗ ТЕЛЕГРАМ (КНОПКУ)
+            // Это то, что будет работать у реальных игроков
+            console.log("Telegram User:", u);
             USER_ID = u.id;
             myName = u.first_name || "Аноним";
             myPhoto = u.photo_url || "";
         } else {
-            // 🧪 Если мы в браузере (тест)
+            // ⚠️ ВАРИАНТ 2: ЗАШЛИ ЧЕРЕЗ БРАУЗЕР (ИЛИ ПРЯМУЮ ССЫЛКУ)
+            // Генерируем фейк, чтобы можно было тестить с компа
             
-            // 1. Генерируем или берем сохраненный ID
-            let storedId = localStorage.getItem('six_real_id');
+            // 1. ID (Сменил ключ на v3, чтобы сбросить старое)
+            let storedId = localStorage.getItem('six_real_id_v3'); 
             if (!storedId) {
                 storedId = Math.floor(Math.random() * 1000000) + 1;
-                localStorage.setItem('six_real_id', storedId);
+                localStorage.setItem('six_real_id_v3', storedId);
             }
             USER_ID = parseInt(storedId);
             
-            // 2. 🔥 НОВОЕ: Генерируем или берем сохраненное Имя
-            let storedName = localStorage.getItem('six_test_name');
+            // 2. Имя (Сменил ключ на v3, чтобы сбросить старое)
+            let storedName = localStorage.getItem('six_test_name_v3');
             if (!storedName) {
-                storedName = randomName;
-                localStorage.setItem('six_test_name', storedName);
+                storedName = randomName; // Берем новое случайное имя
+                localStorage.setItem('six_test_name_v3', storedName);
             }
             myName = storedName;
         }
@@ -190,7 +194,7 @@
         const debugEl = document.getElementById('debug-id');
         if (debugEl) debugEl.innerText = "ID: " + USER_ID;
 
-        // 🔥 НОВОЕ: Находим надпись "ВЫ" и меняем на Имя
+        // Вставляем Имя в интерфейс (вместо "ВЫ")
         const myNameLabel = document.getElementById('my-name-label');
         if (myNameLabel) myNameLabel.innerText = myName;
 
@@ -204,7 +208,7 @@
 
         let searchInterval;
 
-        
+
         // --- 1. ФУНКЦИЯ СТАРТА (ПРИВЯЖИТЕ К КНОПКЕ START) ---
         async function startSearching() {
             tg.HapticFeedback.impactOccurred('heavy');
