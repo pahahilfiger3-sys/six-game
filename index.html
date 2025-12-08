@@ -9,6 +9,30 @@
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Orbitron', sans-serif; }
+        /* Делаем карточку базой, чтобы значок не улетал */
+        .player-card {
+            position: relative; 
+        }
+
+        /* Стиль для значка (универсальный) */
+        .notify-badge {
+            position: absolute;
+            bottom: -5px; 
+            right: -5px;
+            width: 30px; height: 30px;
+            background: #ff0055; /* Розовый неон */
+            color: white;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 14px;
+            border: 2px solid white;
+            box-shadow: 0 0 5px #ff0055;
+            z-index: 100;
+            cursor: pointer;
+            animation: popIn 0.5s ease;
+        }
+
+        @keyframes popIn { from { transform: scale(0); } to { transform: scale(1); } }
     </style>
 </head>
 <body>
@@ -264,83 +288,108 @@
 
         // --- 3. ОБНОВЛЕНИЕ UI ---
         function updateGameUI(data) {
-            // Таймер
-            const timer = document.getElementById('game-timer');
-            const tl = data.time_left;
-            
-            // Если 999 - пишем "ФИНАЛ"
-            if (tl > 900) {
-                timer.innerText = "ФИНАЛ";
-                timer.style.color = "red";
-            } else {
-                timer.innerText = `00:${tl < 10 ? '0'+tl : tl}`;
-                timer.style.color = "#00f3ff";
-            }
-            
+            // 1. Таймер и Вопрос
+            document.getElementById('game-timer').innerText = `00:${data.time_left}`;
             document.getElementById('q-text-val').innerText = data.question;
 
-            // Соперник
+            // 2. 🔥 ОБНОВЛЕНИЕ НОМЕРА РАУНДА (если сервер его присылает)
+            if (data.round) {
+                document.querySelector('.q-label').innerText = 'РАУНД ' + data.round;
+            }
+
+            // 3. Соперник (Имя и Фото)
             const oppNameEl = document.getElementById('opponent-name');
             if (oppNameEl.innerText !== data.opponent_name) {
                 oppNameEl.innerText = data.opponent_name;
                 const oppAva = document.getElementById('opponent-avatar');
+                // Если фото нет, ставим заглушку
                 const photo = (data.opponent_photo && data.opponent_photo !== "null") ? data.opponent_photo : 'https://randomuser.me/api/portraits/lego/1.jpg';
                 oppAva.style.backgroundImage = `url('${photo}')`;
-                oppAva.classList.add('blurred');
+                oppAva.classList.add('blurred'); // Блюр всегда включен, пока не кликнешь
             }
 
-            // Фазы
+            // 4. Смена Фаз
             if (currentPhase !== data.phase) {
                 currentPhase = data.phase;
                 
                 if (currentPhase === 'recording') {
+                    // Фаза записи: показываем микрофон, убираем плеер
                     document.getElementById('mic-wrapper').style.display = 'flex';
                     document.getElementById('player-box-content').style.display = 'none';
                     document.getElementById('q-box-content').style.display = 'block';
-                    const oldBadge = document.querySelector('.notify-badge');
-                    if (oldBadge) oldBadge.remove();
+                    // Удаляем старые значки
+                    document.querySelectorAll('.notify-badge').forEach(e => e.remove());
                 } 
                 else if (currentPhase === 'listening') {
+                    // Фаза прослушки: прячем микрофон
                     document.getElementById('mic-wrapper').style.display = 'none';
                     tg.HapticFeedback.notificationOccurred('warning');
                 }
                 else if (currentPhase === 'voting') {
-                     // Можно показать экран голосования
+                     // 🔥 КОНЕЦ ИГРЫ: Выкидываем в лобби
+                     alert("Игра завершена! Переход в лобби.");
+                     document.getElementById('screen-game').classList.remove('active');
+                     document.getElementById('screen-lobby').classList.add('active');
+                     currentPhase = ""; // Сброс
                 }
             }
 
-            // Значок Play
-            if (data.phase === 'listening' && data.opponent_audio === 'READY') {
+            // 5. 🔥 ПРОСТОЙ ЗНАЧОК (Только один тип)
+            // Если фаза "Слушаем" и у соперника есть аудио -> Рисуем значок
+            if (data.phase === 'listening' && data.opponent_audio) {
                  const oppAvatarDiv = document.getElementById('opponent-avatar');
-                 const oppCard = oppAvatarDiv.parentElement;
+                 const oppCard = oppAvatarDiv.parentElement; // Крепим к карточке
+                 
+                 // Если значка еще нет - создаем
                  if (!oppCard.querySelector('.notify-badge')) {
                      const badge = document.createElement('div');
                      badge.className = 'notify-badge';
-                     badge.innerText = '▶️';
-                     badge.style.position = 'absolute'; 
-                     badge.style.bottom = '10px';
-                     badge.style.right = '10px';
-                     oppCard.onclick = function() { playOpponentAudio(); };
-                     oppAvatarDiv.appendChild(badge);
+                     badge.innerText = '▶️'; // Простой понятный значок
+                     
+                     // По клику на карточку - играем звук
+                     oppCard.onclick = function() { 
+                         playOpponentAudio(data.opponent_audio); 
+                     };
+                     
+                     oppCard.appendChild(badge);
                      tg.HapticFeedback.notificationOccurred('success');
                  }
             }
         }
 
-        function playOpponentAudio() {
+        let currentAudio = null;
+
+        function playOpponentAudio(audioUrl) {
+             // Визуальный эффект
              tg.HapticFeedback.impactOccurred('medium');
              document.getElementById('q-box-content').style.display = 'none';
              const pBox = document.getElementById('player-box-content');
              pBox.style.display = 'flex';
+             
+             // Показываем плеер
              pBox.innerHTML = `
-                <div class="play-btn">⏸</div>
-                <div style="font-size:10px; color:var(--neon-pink); margin-right:5px;">СОПЕРНИК</div>
+                <div class="play-btn" onclick="stopAudio()">⏸</div>
+                <div style="font-size:10px; color:var(--neon-pink); margin-right:5px;">СЛУШАЕМ...</div>
                 <div class="wave-visual"><div class="wave-fill" style="animation: fillWave 5s linear forwards;"></div></div>
             `;
-            setTimeout(() => {
+
+             // 🔥 ЗАПУСК РЕАЛЬНОГО АУДИО
+             if (currentAudio) { currentAudio.pause(); }
+             currentAudio = new Audio(audioUrl);
+             currentAudio.play().catch(e => console.log("Ошибка аудио:", e));
+
+             // Когда доиграет - убрать плеер
+             currentAudio.onended = function() {
                 pBox.style.display = 'none';
                 document.getElementById('q-box-content').style.display = 'block';
-            }, 5000);
+             };
+        }
+        
+        // Вспомогательная функция остановки
+        function stopAudio() {
+            if (currentAudio) { currentAudio.pause(); }
+            document.getElementById('player-box-content').style.display = 'none';
+            document.getElementById('q-box-content').style.display = 'block';
         }
 
         // --- ЗАПИСЬ ---
