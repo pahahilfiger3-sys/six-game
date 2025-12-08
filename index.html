@@ -251,10 +251,21 @@
                         updateGameUI(data);
                     }
                     else if (data.status === 'searching') {
-                        // Если нас выкинуло из игры (игра удалилась), возвращаем в лобби
+                        // Если мы были в игре, но сервер сказал "searching" -> ИГРА ОКОНЧЕНА
                         if (document.getElementById('screen-game').classList.contains('active')) {
-                             alert("Игра окончена!");
-                             location.reload(); // Перезагружаем страницу для чистого старта
+                             console.log("Игра завершена сервером.");
+                             
+                             // 1. Убираем экран игры
+                             document.getElementById('screen-game').classList.remove('active');
+                             // 2. Показываем лобби
+                             document.getElementById('screen-lobby').classList.add('active');
+                             
+                             // 3. Останавливаем опрос (чтобы не спамить)
+                             clearInterval(searchInterval);
+                             
+                             // 4. Сбрасываем переменные
+                             currentPhase = "";
+                             alert("Игра окончена! Спасибо.");
                         }
                     }
 
@@ -310,7 +321,7 @@
             }
 
             // Значок Play
-            if (data.phase === 'listening' && data.opponent_audio === 'READY') {
+            if (data.phase === 'listening' && data.opponent_audio) {
                  const oppAvatarDiv = document.getElementById('opponent-avatar');
                  const oppCard = oppAvatarDiv.parentElement;
                  if (!oppCard.querySelector('.notify-badge')) {
