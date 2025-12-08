@@ -147,7 +147,7 @@
         const UPLOAD_URL = 'https://api.sixapp.online/audio/upload';
         const SEARCH_URL = 'https://api.sixapp.online/search';
 
-        // --- 🆔 ИДЕНТИФИКАЦИЯ (Твой рабочий код) ---
+        // --- 🆔 ИДЕНТИФИКАЦИЯ ---
         const u = tg.initDataUnsafe.user;
         let USER_ID;
         let myName = "Игрок"; 
@@ -180,12 +180,11 @@
             myName = storedName;
         }
 
+        // UI Инициализация
         const debugEl = document.getElementById('debug-id');
         if (debugEl) debugEl.innerText = "ID: " + USER_ID;
-
         const myNameLabel = document.getElementById('my-name-label');
         if (myNameLabel) myNameLabel.innerText = myName;
-
         if (myPhoto) {
             const myAva = document.getElementById('my-avatar');
             const finalMyAva = document.getElementById('final-my-ava');
@@ -194,9 +193,34 @@
         }
 
         let searchInterval;
-        let currentPhase = ""; // Чтобы отслеживать смену фаз
+        let currentPhase = "";
 
-        // --- 1. СТАРТ ---
+        // 🔥 НОВОЕ: ПРОВЕРКА ПРИ ЗАПУСКЕ (АВТО-РЕКОННЕКТ)
+        async function checkActiveGame() {
+            try {
+                // Сразу спрашиваем сервер: "Я в игре?"
+                const response = await fetch(SEARCH_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_id: USER_ID, name: myName, photo: myPhoto })
+                });
+                const data = await response.json();
+
+                if (data.status === 'in_game') {
+                    console.log("♻️ Обнаружена активная игра! Реконнект...");
+                    // Сразу перекидываем в игру, минуя лобби
+                    document.getElementById('screen-lobby').classList.remove('active');
+                    document.getElementById('screen-game').classList.add('active');
+                    
+                    // Запускаем опрос (чтобы таймер пошел)
+                    startPolling();
+                }
+            } catch (e) {
+                console.error("Ошибка авто-входа:", e);
+            }
+        }
+
+        // --- 1. СТАРТ (Ручной) ---
         async function startSearching() {
             tg.HapticFeedback.impactOccurred('heavy');
             document.getElementById('screen-lobby').classList.remove('active');
@@ -204,8 +228,11 @@
             startPolling();
         }
 
-        // --- 2. УМНЫЙ ОПРОС (СЛУШАЕМ РЕЖИССЕРА) ---
+        // --- 2. ОПРОС ---
         function startPolling() {
+            // Если уже запущен, не дублируем
+            if (searchInterval) clearInterval(searchInterval);
+
             searchInterval = setInterval(async () => {
                 try {
                     const response = await fetch(SEARCH_URL, {
@@ -215,42 +242,44 @@
                     });
                     const data = await response.json();
                     
-                    // А. МЫ В ИГРЕ
                     if (data.status === 'in_game') {
-                        // Переключаем экран, если еще не там
                         if (!document.getElementById('screen-game').classList.contains('active')) {
                             document.getElementById('screen-search').classList.remove('active');
                             document.getElementById('screen-game').classList.add('active');
                             tg.HapticFeedback.notificationOccurred('success');
                         }
-
-                        // ОБНОВЛЯЕМ ИНТЕРФЕЙС ПО ДАННЫМ СЕРВЕРА
                         updateGameUI(data);
                     }
-                    
-                    // Б. ЖДЕМ (ДЛЯ ПЕРВОГО ИГРОКА)
-                    else if (data.status === 'matched_wait') {
-                        // Просто ждем, пока сервер создаст игру и переведет нас в 'in_game'
-                        console.log("Ждем старта игры...");
+                    else if (data.status === 'searching') {
+                        // Если нас выкинуло из игры (игра удалилась), возвращаем в лобби
+                        if (document.getElementById('screen-game').classList.contains('active')) {
+                             alert("Игра окончена!");
+                             location.reload(); // Перезагружаем страницу для чистого старта
+                        }
                     }
 
-                } catch (error) {
-                    console.error("Ошибка:", error);
-                }
-            }, 1000); // Опрашиваем каждую секунду для точности таймера
+                } catch (error) { console.error("Ошибка:", error); }
+            }, 1000); 
         }
 
-        // --- 3. ОБНОВЛЕНИЕ ИНТЕРФЕЙСА ---
+        // --- 3. ОБНОВЛЕНИЕ UI ---
         function updateGameUI(data) {
-            // 1. Таймер (берем с сервера!)
+            // Таймер
             const timer = document.getElementById('game-timer');
             const tl = data.time_left;
-            timer.innerText = `00:${tl < 10 ? '0'+tl : tl}`;
             
-            // 2. Вопрос
+            // Если 999 - пишем "ФИНАЛ"
+            if (tl > 900) {
+                timer.innerText = "ФИНАЛ";
+                timer.style.color = "red";
+            } else {
+                timer.innerText = `00:${tl < 10 ? '0'+tl : tl}`;
+                timer.style.color = "#00f3ff";
+            }
+            
             document.getElementById('q-text-val').innerText = data.question;
 
-            // 3. Данные соперника
+            // Соперник
             const oppNameEl = document.getElementById('opponent-name');
             if (oppNameEl.innerText !== data.opponent_name) {
                 oppNameEl.innerText = data.opponent_name;
@@ -260,51 +289,46 @@
                 oppAva.classList.add('blurred');
             }
 
-            // 4. ОБРАБОТКА ФАЗ (РЕЖИССЕР)
+            // Фазы
             if (currentPhase !== data.phase) {
                 currentPhase = data.phase;
-                console.log("НОВАЯ ФАЗА:", currentPhase);
                 
-                // Сброс UI при смене фазы
                 if (currentPhase === 'recording') {
-                    // Показываем микрофон
                     document.getElementById('mic-wrapper').style.display = 'flex';
-                    // Прячем плеер
                     document.getElementById('player-box-content').style.display = 'none';
                     document.getElementById('q-box-content').style.display = 'block';
-                    // Убираем значки у соперника
-                     document.querySelector('.player-card.team-left .notify-badge')?.remove();
+                    const oldBadge = document.querySelector('.notify-badge');
+                    if (oldBadge) oldBadge.remove();
                 } 
                 else if (currentPhase === 'listening') {
-                    // Прячем микрофон (время вышло!)
                     document.getElementById('mic-wrapper').style.display = 'none';
                     tg.HapticFeedback.notificationOccurred('warning');
                 }
+                else if (currentPhase === 'voting') {
+                     // Можно показать экран голосования
+                }
             }
 
-            // 5. ЛОГИКА "SPOTLIGHT" (ЗНАЧКИ НА АВАТАРКЕ)
-            // Если фаза ПРОСЛУШКА и есть аудио от соперника -> Рисуем значок PLAY
+            // Значок Play
             if (data.phase === 'listening' && data.opponent_audio === 'READY') {
-                 const oppCard = document.querySelector('#opponent-avatar').parentElement;
+                 const oppAvatarDiv = document.getElementById('opponent-avatar');
+                 const oppCard = oppAvatarDiv.parentElement;
                  if (!oppCard.querySelector('.notify-badge')) {
-                     // Добавляем значок PLAY
                      const badge = document.createElement('div');
                      badge.className = 'notify-badge';
                      badge.innerText = '▶️';
-                     // Делаем аватарку кликабельной
+                     badge.style.position = 'absolute'; 
+                     badge.style.bottom = '10px';
+                     badge.style.right = '10px';
                      oppCard.onclick = function() { playOpponentAudio(); };
-                     document.querySelector('#opponent-avatar').appendChild(badge);
+                     oppAvatarDiv.appendChild(badge);
                      tg.HapticFeedback.notificationOccurred('success');
                  }
             }
         }
 
-        // --- 4. ПРОИГРЫВАНИЕ АУДИО (ИМИТАЦИЯ) ---
         function playOpponentAudio() {
-             // В MVP мы пока не скачиваем реальный файл (это сложно с Nginx), 
-             // а просто показываем визуализацию, что "играет".
              tg.HapticFeedback.impactOccurred('medium');
-             
              document.getElementById('q-box-content').style.display = 'none';
              const pBox = document.getElementById('player-box-content');
              pBox.style.display = 'flex';
@@ -313,26 +337,22 @@
                 <div style="font-size:10px; color:var(--neon-pink); margin-right:5px;">СОПЕРНИК</div>
                 <div class="wave-visual"><div class="wave-fill" style="animation: fillWave 5s linear forwards;"></div></div>
             `;
-            
-            // Через 5 секунд возвращаем вопрос
             setTimeout(() => {
                 pBox.style.display = 'none';
                 document.getElementById('q-box-content').style.display = 'block';
             }, 5000);
         }
 
-        // --- 5. ЗАПИСЬ (ОТПРАВКА НА СЕРВЕР) ---
+        // --- ЗАПИСЬ ---
         let isRecording = false;
         let mediaRecorder; 
         let audioChunks = []; 
 
         async function toggleRecording() {
-            // Если сервер говорит, что сейчас не фаза записи - запрещаем
             if (currentPhase !== 'recording') {
-                alert("Сейчас нельзя записывать! Слушай других.");
+                alert("Сейчас нельзя записывать!");
                 return;
             }
-
             const btn = document.getElementById('mic-btn');
             const playerBox = document.getElementById('player-box-content');
             
@@ -347,7 +367,6 @@
                     isRecording = true;
                     btn.classList.add('recording');
                     tg.HapticFeedback.impactOccurred('medium');
-                    // Визуал
                     document.getElementById('q-box-content').style.display = 'none';
                     if(playerBox) {
                         playerBox.style.display = 'flex';
@@ -372,20 +391,23 @@
             fetch(UPLOAD_URL, { method: 'POST', body: formData })
             .then(res => res.json())
             .then(data => {
-                // Возвращаем вопрос на экран
-                document.getElementById('player-box-content').style.display = 'none';
-                document.getElementById('q-box-content').style.display = 'block';
-                if(data.status !== 'success') alert("Ошибка: " + data.message);
+                const pBox = document.getElementById('player-box-content');
+                const qBox = document.getElementById('q-box-content');
+                if (pBox) pBox.style.display = 'none';
+                if (qBox) qBox.style.display = 'block';
             })
             .catch(err => alert('Ошибка отправки: ' + err));
         }
 
-        // Остальные функции
         function sendGift(type) { tg.HapticFeedback.impactOccurred('medium'); alert(`Подарок: ${type}`); }
-        function voteFor(name) { alert("Голосование пока не активно"); }
+        function voteFor(name) {}
         function skipVote() {}
         function buyPack() { tg.sendData(JSON.stringify({action:"buy_pack"})); }
         function closeApp() { tg.close(); }
+
+        // 🔥 ЗАПУСК АВТО-ПРОВЕРКИ ПРИ ЗАГРУЗКЕ
+        checkActiveGame();
+        
     </script>
 </body>
 </html>
