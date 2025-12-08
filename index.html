@@ -19,6 +19,7 @@
             <div class="online-tag">🟢 1,240 Online</div>
             <button class="big-btn" onclick="startSearching()">START</button>
             <div style="margin-top: 30px; opacity: 0.6; font-size: 12px;">Баланс: <b id="user-balance">100 🪙</b></div>
+            <div style="margin-top:10px; font-size:10px; color:#444;" id="debug-id"></div>
         </div>
         <div class="bottom-nav">
             <div class="nav-item active">🏠</div>
@@ -120,7 +121,6 @@
 
         <div class="vote-layer" id="vote-screen">
             <div class="vote-title">КТО ЗАЦЕПИЛ? ❤️</div>
-            <div style="color:#888; margin-bottom:20px;">Тапай на фото</div>
             <button class="skip-btn" onclick="skipVote()">НИКТО (СКИП)</button>
         </div>
     </div>
@@ -142,16 +142,33 @@
     <script>
         let tg = window.Telegram.WebApp;
         tg.expand();
-
         tg.setHeaderColor('#0b0b14'); 
         tg.setBackgroundColor('#0b0b14');
 
-        // --- ⚙️ КОНСТАНТЫ ---
-        const USER_ID = 726765325; // Твой ID
         const UPLOAD_URL = 'https://api.sixapp.online/audio/upload';
         const SEARCH_URL = 'https://api.sixapp.online/search';
 
+        // --- 🛠 ВАЖНОЕ ИСПРАВЛЕНИЕ: ДИНАМИЧЕСКИЙ ID ---
         const u = tg.initDataUnsafe.user;
+        let USER_ID;
+
+        if (u && u.id) {
+            // Если открыли через Telegram - берем реальный ID
+            USER_ID = u.id;
+        } else {
+            // Если открыли через Браузер (тест) - генерируем случайный ID
+            // Чтобы сервер думал, что мы разные люди
+            let storedId = localStorage.getItem('six_test_id');
+            if (!storedId) {
+                storedId = Math.floor(Math.random() * 1000000) + 1;
+                localStorage.setItem('six_test_id', storedId);
+            }
+            USER_ID = parseInt(storedId);
+        }
+
+        // Показываем ID на экране (для отладки)
+        document.getElementById('debug-id').innerText = "ID: " + USER_ID;
+
         const myPhoto = (u && u.photo_url) ? u.photo_url : "";
         const myName = (u && u.first_name) ? u.first_name : "Игрок";
 
@@ -160,23 +177,16 @@
             document.getElementById('final-my-ava').style.backgroundImage = `url('${myPhoto}')`;
         }
 
-        let searchInterval; // 🟢 Переменная для таймера опроса
+        let searchInterval;
 
-        // --- 1. СТАРТ ПОИСКА ---
         async function startSearching() {
             tg.HapticFeedback.impactOccurred('heavy');
-            
-            // Показываем экран поиска
             document.getElementById('screen-lobby').classList.remove('active');
             document.getElementById('screen-search').classList.add('active');
-
-            // Запускаем опрос сервера (Polling)
             startPolling();
         }
 
-        // --- 2. ОПРОС СЕРВЕРА (ПУЛЬС) ---
         function startPolling() {
-            // Каждые 2 секунды (2000 мс) спрашиваем сервер
             searchInterval = setInterval(async () => {
                 try {
                     const response = await fetch(SEARCH_URL, {
@@ -186,38 +196,25 @@
                     });
                     const data = await response.json();
                     
-                    console.log("Status:", data.status);
-
-                    // ЕСЛИ ПАРА НАЙДЕНА!
                     if (data.status === 'matched' || data.status === 'matched_wait') {
-                        // 1. Останавливаем опрос
                         clearInterval(searchInterval);
-                        
-                        // 2. Переключаем экран на ИГРУ
                         document.getElementById('screen-search').classList.remove('active');
                         document.getElementById('screen-game').classList.add('active');
-                        
-                        // 3. Запускаем логику игры (ставим имя, таймер)
                         setupGame(); 
-                        
                         tg.HapticFeedback.notificationOccurred('success');
                     }
-                    
                 } catch (error) {
                     console.error("Polling error:", error);
                 }
             }, 2000); 
         }
 
-        // --- ЛОГИКА ИГРЫ ---
         function setupGame() {
-            // Тут потом будем брать данные реального оппонента
             const oppName = "Незнакомка"; 
             document.getElementById('opponent-name').innerText = oppName;
             
             const oppAva = document.getElementById('opponent-avatar');
             oppAva.classList.add('blurred');
-            // Ставим рандомную аватарку для теста
             oppAva.style.backgroundImage = `url('https://randomuser.me/api/portraits/women/20.jpg')`;
             document.getElementById('final-opp-ava').style.backgroundImage = `url('https://randomuser.me/api/portraits/women/20.jpg')`;
             
@@ -227,7 +224,6 @@
         function runRound(num, q1, q2) {
             const text = (num === 1) ? q1 : q2;
             document.getElementById('q-text-val').innerText = text;
-            
             let timeLeft = 15; 
             const timer = document.getElementById('game-timer');
             const interval = setInterval(() => {
@@ -241,7 +237,6 @@
             }, 1000);
         }
 
-        // --- 🎤 ЗАПИСЬ ---
         let isRecording = false;
         let mediaRecorder; 
         let audioChunks = []; 
@@ -257,23 +252,18 @@
                     mediaRecorder = new MediaRecorder(stream);
                     mediaRecorder.ondataavailable = event => audioChunks.push(event.data);
                     mediaRecorder.onstop = sendAudioData;
-                    
                     audioChunks = [];
                     mediaRecorder.start();
                     isRecording = true;
-                    
                     btn.classList.add('recording');
                     tg.HapticFeedback.impactOccurred('medium');
-                    
                     qBox.style.display = 'none';
                     playerBox.style.display = 'flex';
                     playerBox.innerHTML = `
                         <div style="width:10px; height:10px; background:red; border-radius:50%; animation:pulse 1s infinite;"></div>
                         <div style="font-size:12px; color:red; letter-spacing:1px;">ЗАПИСЬ...</div>
                     `;
-                } catch (err) {
-                    alert('Нет доступа к микрофону!');
-                }
+                } catch (err) { alert('Нет доступа к микрофону!'); }
             } else {
                 isRecording = false;
                 btn.classList.remove('recording');
@@ -285,7 +275,6 @@
         function sendAudioData() {
             if (audioChunks.length === 0) return;
             const audioBlob = new Blob(audioChunks, { type: 'audio/ogg; codecs=opus' });
-            
             const formData = new FormData();
             formData.append('audio_file', audioBlob, `voice_${Date.now()}.ogg`);
             formData.append('user_id', USER_ID); 
@@ -300,11 +289,7 @@
             .catch(err => alert('Ошибка отправки: ' + err));
         }
 
-        // --- ПРОЧИЕ ФУНКЦИИ ---
-        function sendGift(type) {
-            tg.HapticFeedback.impactOccurred('medium');
-            alert(`Выбрано: ${type}. Нажми на игрока!`);
-        }
+        function sendGift(type) { tg.HapticFeedback.impactOccurred('medium'); alert(`Выбрано: ${type}`); }
         function endGame() {
             document.getElementById('top-bar').style.display = 'none';
             document.getElementById('controls').style.display = 'none';
@@ -322,10 +307,8 @@
             if (document.getElementById('vote-screen').style.display !== 'flex') return;
             tg.HapticFeedback.impactOccurred('heavy');
             document.getElementById('vote-screen').style.display = 'none';
-            
             document.getElementById('opponent-avatar').classList.remove('blurred');
             document.getElementById('opponent-avatar').classList.add('unblurred');
-
             setTimeout(() => {
                 document.getElementById('screen-game').classList.remove('active');
                 document.getElementById('match-overlay').classList.add('active');
