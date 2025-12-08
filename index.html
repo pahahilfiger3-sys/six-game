@@ -79,7 +79,7 @@
                 
                 <div class="player-card team-right">
                     <div class="avatar" id="my-avatar"></div>
-                    <div class="name-tag" style="color:var(--neon-blue)">ВЫ</div>
+                    <div class="name-tag" id="my-name-label" style="color:var(--neon-blue)">ВЫ</div>
                 </div>
 
                 <div class="player-card team-right">
@@ -151,32 +151,50 @@
         const UPLOAD_URL = 'https://api.sixapp.online/audio/upload';
         const SEARCH_URL = 'https://api.sixapp.online/search';
 
-        // --- 🆔 ГЕНЕРАЦИЯ ID (ЧТОБЫ РАБОТАЛО НА 2 ТЕЛЕФОНАХ) ---
+        // --- 🆔 ИДЕНТИФИКАЦИЯ И ДАННЫЕ ---
         const u = tg.initDataUnsafe.user;
         let USER_ID;
+        let myName = "Игрок"; // Значение по умолчанию
+        let myPhoto = "";
+
+        // 🔥 НОВОЕ: Случайные имена для теста (чтобы не быть "Игроком")
+        const testNames = ["Алекс", "Макс", "Дэн", "Оля", "Катя", "Ник", "Лиза"];
+        const randomName = testNames[Math.floor(Math.random() * testNames.length)] + " (Тест)";
 
         if (u && u.id) {
-            // Если мы в Telegram - берем реальный ID
+            // ✅ Если мы в Telegram - берем реальные данные
             USER_ID = u.id;
+            myName = u.first_name || "Аноним";
+            myPhoto = u.photo_url || "";
         } else {
-            // Если мы в браузере (тест) - берем сохраненный или генерируем новый
+            // 🧪 Если мы в браузере (тест)
+            
+            // 1. Генерируем или берем сохраненный ID
             let storedId = localStorage.getItem('six_real_id');
             if (!storedId) {
                 storedId = Math.floor(Math.random() * 1000000) + 1;
                 localStorage.setItem('six_real_id', storedId);
             }
             USER_ID = parseInt(storedId);
+            
+            // 2. 🔥 НОВОЕ: Генерируем или берем сохраненное Имя
+            let storedName = localStorage.getItem('six_test_name');
+            if (!storedName) {
+                storedName = randomName;
+                localStorage.setItem('six_test_name', storedName);
+            }
+            myName = storedName;
         }
 
-        // Вывод ID для проверки (если есть такой элемент)
+        // Вывод ID для проверки
         const debugEl = document.getElementById('debug-id');
         if (debugEl) debugEl.innerText = "ID: " + USER_ID;
 
-        // Данные пользователя
-        const myName = (u && u.first_name) ? u.first_name : "Игрок";
-        const myPhoto = (u && u.photo_url) ? u.photo_url : "";
+        // 🔥 НОВОЕ: Находим надпись "ВЫ" и меняем на Имя
+        const myNameLabel = document.getElementById('my-name-label');
+        if (myNameLabel) myNameLabel.innerText = myName;
 
-        // Установка аватарки (если есть элементы)
+        // Установка аватарки
         if (myPhoto) {
             const myAva = document.getElementById('my-avatar');
             const finalMyAva = document.getElementById('final-my-ava');
@@ -186,6 +204,7 @@
 
         let searchInterval;
 
+        
         // --- 1. ФУНКЦИЯ СТАРТА (ПРИВЯЖИТЕ К КНОПКЕ START) ---
         async function startSearching() {
             tg.HapticFeedback.impactOccurred('heavy');
