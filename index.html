@@ -7,52 +7,53 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link rel="stylesheet" href="style.css"> 
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800&display=swap" rel="stylesheet">
-    
     <style>
         body { font-family: 'Orbitron', sans-serif; }
         
-        /* ЛОГИ (Временно оставим, чтобы ты видел, что происходит) */
-        #debug-console {
-            position: fixed; bottom: 0; left: 0; width: 100%; height: 60px;
-            background: rgba(0,0,0,0.9); color: #00ff00; font-size: 10px;
-            font-family: monospace; overflow-y: scroll; z-index: 10000;
-            padding: 5px; pointer-events: none; border-top: 2px solid #00ff00;
-            display: block; /* Если мешает - поставь none */
-        }
-
-        .blurred {
-            filter: blur(8px) brightness(0.8) !important;
-            transition: filter 0.5s ease;
-        }
-        
-        /* ЗНАЧОК PLAY */
+        /* Стили для маленького значка Play на аватарке */
         .player-card { position: relative; }
         .notify-badge {
             position: absolute;
-            bottom: -5px; right: -5px;
-            width: 32px; height: 32px;
-            background: #ff0055; color: white;
+            bottom: -5px; 
+            right: -5px;
+            width: 30px; 
+            height: 30px;
+            background: #ff0055; 
+            color: white;
             border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
-            font-size: 16px;
+            font-size: 14px;
             border: 2px solid white;
-            box-shadow: 0 0 8px #ff0055;
-            z-index: 200; cursor: pointer;
-            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 0 5px #ff0055;
+            z-index: 100;
+            cursor: pointer;
+            animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
-        @keyframes popIn { from { transform: scale(0); } to { transform: scale(1); } }
+        @keyframes popIn { 0% { transform: scale(0); } 100% { transform: scale(1); } }
 
+        /* Лог (можно скрыть display:none) */
+        #debug-console {
+            position: fixed; bottom: 0; left: 0; width: 100%; height: 60px;
+            background: rgba(0,0,0,0.8); color: lime; font-size: 10px;
+            font-family: monospace; overflow-y: scroll; z-index: 9999;
+            pointer-events: none; display: block;
+        }
+        
+        /* Кнопка выхода */
         .force-exit-btn {
             position: absolute; top: 10px; left: 10px;
-            background: rgba(255, 0, 0, 0.6); color: white;
-            border: 1px solid red; font-size: 10px; padding: 6px 10px;
-            border-radius: 4px; z-index: 5000; cursor: pointer;
+            background: rgba(255, 0, 0, 0.5); color: white;
+            border: 1px solid red; font-size: 10px; padding: 5px;
+            z-index: 5000; cursor: pointer;
         }
+        
+        /* Блюр (мягкий) */
+        .blurred { filter: blur(8px) brightness(0.8); transition: filter 0.5s; }
     </style>
 </head>
 <body>
 
-    <div id="debug-console">Готов к работе.</div>
+    <div id="debug-console">Ready.</div>
 
     <div id="screen-lobby" class="screen active">
         <div class="lobby-container">
@@ -60,12 +61,12 @@
             <div class="online-tag">🟢 ONLINE</div>
             <button class="big-btn" onclick="startSearching()">START</button>
             <div style="margin-top: 30px; opacity: 0.6; font-size: 12px;">Баланс: <b id="user-balance">100 🪙</b></div>
-            <div style="margin-top:10px; font-size:10px; color:#666;" id="debug-id"></div>
+            <div style="margin-top:10px; font-size:10px; color:#444;" id="debug-id"></div>
         </div>
         <div class="bottom-nav">
             <div class="nav-item active">🏠</div>
             <div class="nav-item">💬</div>
-            <div class="nav-item">🛍</div>
+            <div class="nav-item" onclick="buyPack()">🛍</div>
             <div class="nav-item">👤</div>
         </div>
     </div>
@@ -75,13 +76,12 @@
             <div style="width:80px; height:80px; border:4px solid var(--neon-blue); border-radius:50%; border-top-color:transparent; animation:spin 1s linear infinite; margin-bottom:20px;"></div>
             <style>@keyframes spin { to { transform: rotate(360deg); } }</style>
             <div>Ищем пару...</div>
-            <button onclick="forceExit()" style="margin-top:20px; color:#666; background:none; border:1px solid #444; padding:5px 10px;">ОТМЕНА</button>
+            <button onclick="forceExit()" style="margin-top:20px; border:1px solid #555; background:none; color:#777;">ОТМЕНА</button>
         </div>
     </div>
 
     <div id="screen-game" class="screen">
-        <button class="force-exit-btn" onclick="forceExit()">🚪 ВЫХОД</button>
-
+        <button class="force-exit-btn" onclick="forceExit()">🚪 ВЫЙТИ</button>
         <div class="game-header"><span>TABLE #1</span><span id="game-timer">00:00</span></div>
         
         <div class="top-spotlight" id="top-bar">
@@ -92,7 +92,7 @@
             <div class="player-content" id="player-box-content" style="display:none;">
                 <div class="play-btn">▶️</div>
                 <div class="wave-visual"><div class="wave-fill"></div></div>
-                <div style="font-size:12px; font-weight:bold;">0:15</div>
+                <div style="font-size:12px; font-weight:bold;">СЛУШАЕМ...</div>
             </div>
         </div>
         
@@ -119,15 +119,31 @@
 
         <div class="controls-container" id="controls">
             <div class="side-col left">
-                <div class="gift-btn" onclick="sendGift('ice')"><div class="gift-price">10</div></div>
-                <div class="gift-btn" onclick="sendGift('fire')"><div class="gift-price">25</div></div>
+                <div class="gift-btn" onclick="sendGift('ice')">
+                    <svg class="gift-icon" viewBox="0 0 24 24" style="fill:#00f3ff;"><path d="M12,2L4,6v12l8,4l8-4V6L12,2z M12,18.5L6.5,15.8V8.2L12,11V18.5z M12,9L6.5,6.3L12,3.5l5.5,2.8L12,9z M17.5,15.8 L12,18.5V11l5.5-2.8V15.8z"/></svg>
+                    <div class="gift-price">10</div>
+                </div>
+                <div class="gift-btn" onclick="sendGift('fire')">
+                    <svg class="gift-icon" viewBox="0 0 24 24" style="fill:#ff5500;"><path d="M13.5.67s.74 2.65.74 4.8c0 2.06-1.35 3.73-3.41 3.73-2.07 0-3.63-1.67-3.63-3.73l.03-.36C5.21 7.51 4 10.62 4 14c0 4.42 3.58 8 8 8s8-3.58 8-8C20 8.61 17.41 3.8 13.5.67zM11.71 19c-1.78 0-3.22-1.4-3.22-3.14 0-1.62 1.05-2.76 2.81-3.12 1.77-.36 3.6-1.21 4.62-2.58.39 1.29.59 2.65.59 4.04 0 2.65-2.15 4.8-4.8 4.8z"/></svg>
+                    <div class="gift-price">25</div>
+                </div>
             </div>
+
             <div class="mic-wrapper" id="mic-wrapper">
-                <button class="mic-btn" id="mic-btn" onclick="toggleRecording()">🎤</button>
+                <button class="mic-btn" id="mic-btn" onclick="toggleRecording()">
+                    <svg class="mic-icon" viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/><path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
+                </button>
             </div>
+
             <div class="side-col right">
-                <div class="gift-btn" onclick="sendGift('spy')"><div class="gift-price">100</div></div>
-                <div class="gift-btn" onclick="sendGift('drink')"><div class="gift-price">50</div></div>
+                <div class="gift-btn" onclick="sendGift('spy')">
+                    <svg class="gift-icon" viewBox="0 0 24 24" style="fill:#ffd700;"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+                    <div class="gift-price">100</div>
+                </div>
+                <div class="gift-btn" onclick="sendGift('drink')">
+                    <svg class="gift-icon" viewBox="0 0 24 24" style="fill:#ff00ff;"><path d="M21 5V3H3v2l8 9v5H6v2h12v-2h-5v-5l8-9zM7.43 7L5.66 5h12.69l-1.78 2H7.43z"/></svg>
+                    <div class="gift-price">50</div>
+                </div>
             </div>
         </div>
     </div>
@@ -146,7 +162,7 @@
         const UPLOAD_URL = 'https://api.sixapp.online/audio/upload';
         const SEARCH_URL = 'https://api.sixapp.online/search';
 
-        // --- ИДЕНТИФИКАЦИЯ (v4 для сброса) ---
+        // ИДЕНТИФИКАЦИЯ
         const u = tg.initDataUnsafe.user;
         let USER_ID, myName = "Игрок", myPhoto = "";
 
@@ -155,10 +171,10 @@
             myName = u.first_name || "Аноним";
             myPhoto = u.photo_url || "";
         } else {
-            let storedId = localStorage.getItem('six_real_id_v4'); 
+            let storedId = localStorage.getItem('six_real_id_v5'); 
             if (!storedId) {
                 storedId = Math.floor(Math.random() * 1000000) + 1;
-                localStorage.setItem('six_real_id_v4', storedId);
+                localStorage.setItem('six_real_id_v5', storedId);
             }
             USER_ID = parseInt(storedId);
             myName = "Тест " + USER_ID;
@@ -168,41 +184,28 @@
         document.getElementById('my-name-label').innerText = myName;
         if (myPhoto) document.getElementById('my-avatar').style.backgroundImage = `url('${myPhoto}')`;
 
-        // Глобальные переменные
         let searchInterval = null;
         let currentPhase = "";
         let currentAudio = null;
-        let isGameEnding = false; // Блокировка спама алертов
 
-        // 🟢 ФУНКЦИЯ ПОЛНОГО ВЫХОДА
+        // ВЫХОД
         function forceExit() {
             log("🛑 EXIT");
-            if (searchInterval) {
-                clearInterval(searchInterval);
-                searchInterval = null;
-            }
+            if (searchInterval) clearInterval(searchInterval);
             if (currentAudio) { currentAudio.pause(); currentAudio = null; }
-            
-            // Сброс UI
             document.getElementById('screen-game').classList.remove('active');
             document.getElementById('screen-search').classList.remove('active');
             document.getElementById('screen-lobby').classList.add('active');
-            
             currentPhase = "";
-            isGameEnding = false;
         }
 
-        // 🟢 СТАРТ
-        function startSearching() {
+        async function startSearching() {
             tg.HapticFeedback.impactOccurred('heavy');
             document.getElementById('screen-lobby').classList.remove('active');
             document.getElementById('screen-search').classList.add('active');
-            
-            isGameEnding = false;
             startPolling();
         }
 
-        // 🟢 ОПРОС СЕРВЕРА
         function startPolling() {
             if (searchInterval) clearInterval(searchInterval);
 
@@ -216,7 +219,6 @@
                     const data = await response.json();
                     
                     if (data.status === 'in_game') {
-                        // Переход на экран игры
                         if (!document.getElementById('screen-game').classList.contains('active')) {
                             document.getElementById('screen-search').classList.remove('active');
                             document.getElementById('screen-game').classList.add('active');
@@ -224,30 +226,28 @@
                         updateGameUI(data);
                     }
                     else if (data.status === 'searching') {
-                        // Если мы были в игре, но сервер сказал "searching" -> ИГРА УДАЛЕНА
+                        // Если выкинуло из игры
                         if (document.getElementById('screen-game').classList.contains('active')) {
-                             if (!isGameEnding) {
-                                 isGameEnding = true;
-                                 log("Game deleted by server.");
-                                 alert("Игра завершена!");
-                                 forceExit();
-                             }
+                             alert("Игра завершена!");
+                             forceExit();
                         }
                     }
                 } catch (error) { console.error("Poll err"); }
             }, 1000); 
         }
 
-        // 🟢 ОБНОВЛЕНИЕ ЭКРАНА
         function updateGameUI(data) {
-            // 1. Исправленный таймер (00:09)
+            // 1. Таймер (исправлен 00:09)
             const timer = document.getElementById('game-timer');
             let tl = data.time_left;
             timer.innerText = `00:${tl < 10 ? '0'+tl : tl}`;
             
             document.getElementById('q-text-val').innerText = data.question;
 
-            // 2. Соперник
+            // 2. Раунды (если сервер шлет)
+            if (data.round) document.querySelector('.q-label').innerText = 'РАУНД ' + data.round;
+
+            // 3. Соперник
             const oppNameEl = document.getElementById('opponent-name');
             if (oppNameEl.innerText !== data.opponent_name) {
                 oppNameEl.innerText = data.opponent_name;
@@ -257,30 +257,34 @@
                 oppAva.classList.add('blurred');
             }
 
-            // 3. Смена Фаз
+            // 4. Смена Фаз
             if (currentPhase !== data.phase) {
                 currentPhase = data.phase;
                 log(`ФАЗА: ${currentPhase}`);
                 
                 if (currentPhase === 'recording') {
-                    document.getElementById('controls').style.display = 'flex'; // Показываем пульт
+                    // Вкл микрофон
+                    document.getElementById('mic-wrapper').style.visibility = 'visible'; 
+                    document.getElementById('controls').style.opacity = '1';
                     document.getElementById('player-box-content').style.display = 'none';
                     document.getElementById('q-box-content').style.display = 'block';
                     
-                    // Чистим старые значки ТОЛЬКО при начале записи
+                    // Чистим старые значки
                     document.querySelectorAll('.notify-badge').forEach(e => e.remove());
                 } 
                 else if (currentPhase === 'listening') {
-                    document.getElementById('controls').style.display = 'none'; // Прячем пульт
+                    // Выкл микрофон
+                    document.getElementById('mic-wrapper').style.visibility = 'hidden';
                     tg.HapticFeedback.notificationOccurred('warning');
+                }
+                else if (currentPhase === 'voting') {
+                    forceExit(); // Временно выходим в меню
                 }
             }
 
-            // 4. Значок Play (Без мигания)
+            // 5. Значок Play (НЕ МИГАЕТ)
             if (data.phase === 'listening' && data.opponent_audio) {
                  const oppCard = document.getElementById('opponent-card');
-                 
-                 // Добавляем, только если НЕТ значка
                  if (!oppCard.querySelector('.notify-badge')) {
                      const badge = document.createElement('div');
                      badge.className = 'notify-badge';
@@ -288,12 +292,12 @@
                      oppCard.onclick = function() { playOpponentAudio(data.opponent_audio); };
                      oppCard.appendChild(badge);
                      tg.HapticFeedback.notificationOccurred('success');
-                     log("Значок Play добавлен");
+                     log("Badge added");
                  }
             }
         }
 
-        // 🟢 АУДИО
+        // АУДИО
         function playOpponentAudio(audioUrl) {
              log("Play: " + audioUrl);
              tg.HapticFeedback.impactOccurred('medium');
@@ -310,7 +314,7 @@
             `;
 
             currentAudio = new Audio(audioUrl);
-            currentAudio.play().catch(e => alert("Err: " + e));
+            currentAudio.play().catch(e => log(e));
             currentAudio.onended = function() { stopAudio(); };
         }
 
@@ -320,7 +324,7 @@
             document.getElementById('q-box-content').style.display = 'block';
         }
 
-        // 🟢 ЗАПИСЬ
+        // ЗАПИСЬ
         let isRecording = false;
         let mediaRecorder; 
         let audioChunks = []; 
@@ -340,7 +344,7 @@
                     isRecording = true;
                     btn.classList.add('recording');
                     tg.HapticFeedback.impactOccurred('medium');
-                } catch (err) { alert('Нет микрофона'); }
+                } catch (err) { alert('Mic Error'); }
             } else {
                 isRecording = false;
                 btn.classList.remove('recording');
@@ -355,7 +359,6 @@
             formData.append('audio_file', audioBlob, `voice_${Date.now()}.ogg`);
             formData.append('user_id', USER_ID); 
             
-            // Временный визуал отправки
             const pBox = document.getElementById('player-box-content');
             document.getElementById('q-box-content').style.display = 'none';
             pBox.style.display = 'flex';
@@ -366,9 +369,8 @@
             .then(data => {
                 pBox.style.display = 'none';
                 document.getElementById('q-box-content').style.display = 'block';
-                log("Upload OK");
             })
-            .catch(err => alert('Err: ' + err));
+            .catch(err => alert('Upload Error'));
         }
 
         function sendGift(type) { tg.HapticFeedback.impactOccurred('medium'); alert(`Подарок: ${type}`); }
