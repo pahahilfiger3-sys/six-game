@@ -9,28 +9,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Orbitron', sans-serif; }
-        /* Делаем карточку "базой" для позиционирования */
-        .player-card {
-            position: relative; 
-        }
-
-        /* Стиль кнопки PLAY (маленькая, в углу) */
-        .notify-badge {
-            position: absolute;
-            bottom: -5px; 
-            right: -5px;
-            width: 30px; 
-            height: 30px;
-            background: #ff0055; 
-            color: white;
-            border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 14px;
-            border: 2px solid white;
-            box-shadow: 0 0 5px #ff0055;
-            z-index: 100;
-            cursor: pointer;
-        }
     </style>
 </head>
 <body>
@@ -273,21 +251,10 @@
                         updateGameUI(data);
                     }
                     else if (data.status === 'searching') {
-                        // Если мы были в игре, но сервер сказал "searching" -> ИГРА ОКОНЧЕНА
+                        // Если нас выкинуло из игры (игра удалилась), возвращаем в лобби
                         if (document.getElementById('screen-game').classList.contains('active')) {
-                             console.log("Игра завершена сервером.");
-                             
-                             // 1. Убираем экран игры
-                             document.getElementById('screen-game').classList.remove('active');
-                             // 2. Показываем лобби
-                             document.getElementById('screen-lobby').classList.add('active');
-                             
-                             // 3. Останавливаем опрос (чтобы не спамить)
-                             clearInterval(searchInterval);
-                             
-                             // 4. Сбрасываем переменные
-                             currentPhase = "";
-                             alert("Игра окончена! Спасибо.");
+                             alert("Игра окончена!");
+                             location.reload(); // Перезагружаем страницу для чистого старта
                         }
                     }
 
@@ -297,15 +264,22 @@
 
         // --- 3. ОБНОВЛЕНИЕ UI ---
         function updateGameUI(data) {
-            // 1. Таймер
+            // Таймер
             const timer = document.getElementById('game-timer');
             const tl = data.time_left;
-            timer.innerText = `00:${tl < 10 ? '0'+tl : tl}`;
             
-            // 2. Вопрос
+            // Если 999 - пишем "ФИНАЛ"
+            if (tl > 900) {
+                timer.innerText = "ФИНАЛ";
+                timer.style.color = "red";
+            } else {
+                timer.innerText = `00:${tl < 10 ? '0'+tl : tl}`;
+                timer.style.color = "#00f3ff";
+            }
+            
             document.getElementById('q-text-val').innerText = data.question;
 
-            // 3. Соперник (Имя/Фото)
+            // Соперник
             const oppNameEl = document.getElementById('opponent-name');
             if (oppNameEl.innerText !== data.opponent_name) {
                 oppNameEl.innerText = data.opponent_name;
@@ -315,79 +289,58 @@
                 oppAva.classList.add('blurred');
             }
 
-            // 4. Смена Фаз (Прячем/Показываем микрофон)
+            // Фазы
             if (currentPhase !== data.phase) {
                 currentPhase = data.phase;
                 
                 if (currentPhase === 'recording') {
-                    // Показываем панель управления (твое нижнее меню)
-                    document.getElementById('controls').style.display = 'flex'; 
+                    document.getElementById('mic-wrapper').style.display = 'flex';
                     document.getElementById('player-box-content').style.display = 'none';
                     document.getElementById('q-box-content').style.display = 'block';
-                    // Удаляем старые значки play
-                    document.querySelectorAll('.notify-badge').forEach(e => e.remove());
+                    const oldBadge = document.querySelector('.notify-badge');
+                    if (oldBadge) oldBadge.remove();
                 } 
                 else if (currentPhase === 'listening') {
-                    // Прячем микрофон (чтобы не жали)
-                    document.getElementById('controls').style.display = 'none'; 
+                    document.getElementById('mic-wrapper').style.display = 'none';
                     tg.HapticFeedback.notificationOccurred('warning');
+                }
+                else if (currentPhase === 'voting') {
+                     // Можно показать экран голосования
                 }
             }
 
-            // 5. РИСУЕМ ЗНАЧОК PLAY (Если есть аудио)
-            if (data.phase === 'listening' && data.opponent_audio) {
+            // Значок Play
+            if (data.phase === 'listening' && data.opponent_audio === 'READY') {
                  const oppAvatarDiv = document.getElementById('opponent-avatar');
-                 // Ищем родителя (карточку), чтобы прикрепить значок к ней
-                 const oppCard = oppAvatarDiv.parentElement; 
-                 
+                 const oppCard = oppAvatarDiv.parentElement;
                  if (!oppCard.querySelector('.notify-badge')) {
                      const badge = document.createElement('div');
                      badge.className = 'notify-badge';
                      badge.innerText = '▶️';
-                     
-                     // ВАЖНО: Передаем ссылку на аудио
-                     oppCard.onclick = function() { 
-                         playOpponentAudio(data.opponent_audio); 
-                     };
-                     
-                     // Добавляем значок ВНУТРЬ карточки, поверх аватарки
-                     oppCard.appendChild(badge);
+                     badge.style.position = 'absolute'; 
+                     badge.style.bottom = '10px';
+                     badge.style.right = '10px';
+                     oppCard.onclick = function() { playOpponentAudio(); };
+                     oppAvatarDiv.appendChild(badge);
                      tg.HapticFeedback.notificationOccurred('success');
                  }
             }
         }
 
-        let currentAudio = null;
-
-        function playOpponentAudio(audioUrl) {
-             console.log("Играем:", audioUrl);
+        function playOpponentAudio() {
              tg.HapticFeedback.impactOccurred('medium');
-             
-             // Если уже играет - стоп
-             if (currentAudio) { currentAudio.pause(); currentAudio = null; }
-
-             // Визуал плеера
              document.getElementById('q-box-content').style.display = 'none';
              const pBox = document.getElementById('player-box-content');
              pBox.style.display = 'flex';
              pBox.innerHTML = `
-                <div class="play-btn" onclick="stopAudio()">⏸</div>
+                <div class="play-btn">⏸</div>
                 <div style="font-size:10px; color:var(--neon-pink); margin-right:5px;">СОПЕРНИК</div>
                 <div class="wave-visual"><div class="wave-fill" style="animation: fillWave 5s linear forwards;"></div></div>
             `;
-
-            // Запуск реального звука
-            currentAudio = new Audio(audioUrl);
-            currentAudio.play().catch(e => alert("Ошибка звука: " + e));
-            
-            // Когда закончится
-            currentAudio.onended = function() { stopAudio(); };
-        }
-
-        function stopAudio() {
-            if (currentAudio) { currentAudio.pause(); currentAudio = null; }
-            document.getElementById('player-box-content').style.display = 'none';
-            document.getElementById('q-box-content').style.display = 'block';
+            setTimeout(() => {
+                pBox.style.display = 'none';
+                document.getElementById('q-box-content').style.display = 'block';
+            }, 5000);
         }
 
         // --- ЗАПИСЬ ---
