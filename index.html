@@ -7,48 +7,65 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link rel="stylesheet" href="style.css"> 
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800&display=swap" rel="stylesheet">
+    
     <style>
         body { font-family: 'Orbitron', sans-serif; }
-        /* Делаем карточку базой, чтобы значок не улетал */
-        .player-card {
-            position: relative; 
+        
+        /* ЛОГИ (Временно оставим, чтобы ты видел, что происходит) */
+        #debug-console {
+            position: fixed; bottom: 0; left: 0; width: 100%; height: 60px;
+            background: rgba(0,0,0,0.9); color: #00ff00; font-size: 10px;
+            font-family: monospace; overflow-y: scroll; z-index: 10000;
+            padding: 5px; pointer-events: none; border-top: 2px solid #00ff00;
+            display: block; /* Если мешает - поставь none */
         }
 
-        /* Стиль для значка (универсальный) */
+        .blurred {
+            filter: blur(8px) brightness(0.8) !important;
+            transition: filter 0.5s ease;
+        }
+        
+        /* ЗНАЧОК PLAY */
+        .player-card { position: relative; }
         .notify-badge {
             position: absolute;
-            bottom: -5px; 
-            right: -5px;
-            width: 30px; height: 30px;
-            background: #ff0055; /* Розовый неон */
-            color: white;
+            bottom: -5px; right: -5px;
+            width: 32px; height: 32px;
+            background: #ff0055; color: white;
             border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
-            font-size: 14px;
+            font-size: 16px;
             border: 2px solid white;
-            box-shadow: 0 0 5px #ff0055;
-            z-index: 100;
-            cursor: pointer;
-            animation: popIn 0.5s ease;
+            box-shadow: 0 0 8px #ff0055;
+            z-index: 200; cursor: pointer;
+            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
-
         @keyframes popIn { from { transform: scale(0); } to { transform: scale(1); } }
+
+        .force-exit-btn {
+            position: absolute; top: 10px; left: 10px;
+            background: rgba(255, 0, 0, 0.6); color: white;
+            border: 1px solid red; font-size: 10px; padding: 6px 10px;
+            border-radius: 4px; z-index: 5000; cursor: pointer;
+        }
     </style>
 </head>
 <body>
 
+    <div id="debug-console">Готов к работе.</div>
+
     <div id="screen-lobby" class="screen active">
         <div class="lobby-container">
             <div class="logo">SIX</div>
-            <div class="online-tag">🟢 1,240 Online</div>
+            <div class="online-tag">🟢 ONLINE</div>
             <button class="big-btn" onclick="startSearching()">START</button>
             <div style="margin-top: 30px; opacity: 0.6; font-size: 12px;">Баланс: <b id="user-balance">100 🪙</b></div>
-            <div style="margin-top:10px; font-size:10px; color:#444;" id="debug-id"></div>
+            <div style="margin-top:10px; font-size:10px; color:#666;" id="debug-id"></div>
         </div>
         <div class="bottom-nav">
             <div class="nav-item active">🏠</div>
             <div class="nav-item">💬</div>
-            <div class="nav-item" onclick="buyPack()">🛍</div>
+            <div class="nav-item">🛍</div>
             <div class="nav-item">👤</div>
         </div>
     </div>
@@ -58,11 +75,13 @@
             <div style="width:80px; height:80px; border:4px solid var(--neon-blue); border-radius:50%; border-top-color:transparent; animation:spin 1s linear infinite; margin-bottom:20px;"></div>
             <style>@keyframes spin { to { transform: rotate(360deg); } }</style>
             <div>Ищем пару...</div>
-            <div style="font-size: 10px; color: #666; margin-top: 10px;">Подбираем по рейтингу</div>
+            <button onclick="forceExit()" style="margin-top:20px; color:#666; background:none; border:1px solid #444; padding:5px 10px;">ОТМЕНА</button>
         </div>
     </div>
 
     <div id="screen-game" class="screen">
+        <button class="force-exit-btn" onclick="forceExit()">🚪 ВЫХОД</button>
+
         <div class="game-header"><span>TABLE #1</span><span id="game-timer">00:00</span></div>
         
         <div class="top-spotlight" id="top-bar">
@@ -70,7 +89,7 @@
                 <div class="q-label">РАУНД 1</div>
                 <div class="q-text" id="q-text-val">Загрузка...</div>
             </div>
-            <div class="player-content" id="player-box-content">
+            <div class="player-content" id="player-box-content" style="display:none;">
                 <div class="play-btn">▶️</div>
                 <div class="wave-visual"><div class="wave-fill"></div></div>
                 <div style="font-size:12px; font-weight:bold;">0:15</div>
@@ -79,88 +98,38 @@
         
         <div class="center-wrapper"> 
             <div class="table-grid">
-                <div class="player-card team-left" onclick="voteFor('Аня')">
-                    <div class="avatar" style="background-image:url('https://randomuser.me/api/portraits/women/44.jpg')">
-                        <div class="notify-badge">🎤</div>
-                    </div>
-                    <div class="name-tag">Аня</div>
-                </div>
+                <div class="player-card team-left"><div class="avatar" style="background-image:url('https://randomuser.me/api/portraits/women/44.jpg')"></div><div class="name-tag">Аня</div></div>
                 
-                <div class="player-card team-left" onclick="voteFor('Оппонент')">
+                <div class="player-card team-left" id="opponent-card">
                     <div class="avatar" id="opponent-avatar"></div>
                     <div class="name-tag" id="opponent-name" style="color:var(--neon-pink)">...</div>
                 </div>
 
-                <div class="player-card team-left">
-                    <div class="avatar" style="background-image:url('https://randomuser.me/api/portraits/women/68.jpg')"></div>
-                    <div class="name-tag">Оля</div>
-                </div>
-
-                <div class="player-card team-right">
-                    <div class="avatar" style="background-image:url('https://randomuser.me/api/portraits/men/32.jpg')"></div>
-                    <div class="name-tag">Макс</div>
-                </div>
+                <div class="player-card team-left"><div class="avatar" style="background-image:url('https://randomuser.me/api/portraits/women/68.jpg')"></div><div class="name-tag">Оля</div></div>
+                <div class="player-card team-right"><div class="avatar" style="background-image:url('https://randomuser.me/api/portraits/men/32.jpg')"></div><div class="name-tag">Макс</div></div>
                 
                 <div class="player-card team-right">
                     <div class="avatar" id="my-avatar"></div>
                     <div class="name-tag" id="my-name-label" style="color:var(--neon-blue)">ВЫ</div>
                 </div>
 
-                <div class="player-card team-right">
-                    <div class="avatar" style="background-image:url('https://randomuser.me/api/portraits/men/86.jpg')"></div>
-                    <div class="name-tag">Дэн</div>
-                </div>
+                <div class="player-card team-right"><div class="avatar" style="background-image:url('https://randomuser.me/api/portraits/men/86.jpg')"></div><div class="name-tag">Дэн</div></div>
             </div>
         </div>
 
         <div class="controls-container" id="controls">
             <div class="side-col left">
-                <div class="gift-btn" onclick="sendGift('ice')">
-                    <svg class="gift-icon" viewBox="0 0 24 24" style="fill:#00f3ff;"><path d="M12,2L4,6v12l8,4l8-4V6L12,2z M12,18.5L6.5,15.8V8.2L12,11V18.5z M12,9L6.5,6.3L12,3.5l5.5,2.8L12,9z M17.5,15.8 L12,18.5V11l5.5-2.8V15.8z"/></svg>
-                    <div class="gift-price">10</div>
-                </div>
-                <div class="gift-btn" onclick="sendGift('fire')">
-                    <svg class="gift-icon" viewBox="0 0 24 24" style="fill:#ff5500;"><path d="M13.5.67s.74 2.65.74 4.8c0 2.06-1.35 3.73-3.41 3.73-2.07 0-3.63-1.67-3.63-3.73l.03-.36C5.21 7.51 4 10.62 4 14c0 4.42 3.58 8 8 8s8-3.58 8-8C20 8.61 17.41 3.8 13.5.67zM11.71 19c-1.78 0-3.22-1.4-3.22-3.14 0-1.62 1.05-2.76 2.81-3.12 1.77-.36 3.6-1.21 4.62-2.58.39 1.29.59 2.65.59 4.04 0 2.65-2.15 4.8-4.8 4.8z"/></svg>
-                    <div class="gift-price">25</div>
-                </div>
+                <div class="gift-btn" onclick="sendGift('ice')"><div class="gift-price">10</div></div>
+                <div class="gift-btn" onclick="sendGift('fire')"><div class="gift-price">25</div></div>
             </div>
-
-            <div class="mic-wrapper">
-                <button class="mic-btn" id="mic-btn" onclick="toggleRecording()">
-                    <svg class="mic-icon" viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/><path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
-                </button>
+            <div class="mic-wrapper" id="mic-wrapper">
+                <button class="mic-btn" id="mic-btn" onclick="toggleRecording()">🎤</button>
             </div>
-
             <div class="side-col right">
-                <div class="gift-btn" onclick="sendGift('spy')">
-                    <svg class="gift-icon" viewBox="0 0 24 24" style="fill:#ffd700;"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
-                    <div class="gift-price">100</div>
-                </div>
-                <div class="gift-btn" onclick="sendGift('drink')">
-                    <svg class="gift-icon" viewBox="0 0 24 24" style="fill:#ff00ff;"><path d="M21 5V3H3v2l8 9v5H6v2h12v-2h-5v-5l8-9zM7.43 7L5.66 5h12.69l-1.78 2H7.43z"/></svg>
-                    <div class="gift-price">50</div>
-                </div>
+                <div class="gift-btn" onclick="sendGift('spy')"><div class="gift-price">100</div></div>
+                <div class="gift-btn" onclick="sendGift('drink')"><div class="gift-price">50</div></div>
             </div>
         </div>
-
-        <div class="vote-layer" id="vote-screen">
-            <div class="vote-title">КТО ЗАЦЕПИЛ? ❤️</div>
-            <button class="skip-btn" onclick="skipVote()">НИКТО (СКИП)</button>
-        </div>
-    </div>
-
-    <div id="match-overlay" class="screen">
-        <div class="match-title">IT'S A MATCH!</div>
-        <div class="match-avatars">
-            <div class="match-ava" id="final-my-ava"></div>
-            <div style="font-size:30px">⚡️</div>
-            <div class="match-ava" id="final-opp-ava"></div>
-        </div>
-        <button class="match-btn" onclick="closeApp()">В ЧАТ</button>
-    </div>
-
-    <div id="zoom-overlay" class="screen" style="background:rgba(0,0,0,0.9); justify-content:center; align-items:center;" onclick="this.classList.remove('active')">
-        <img id="zoom-image" style="max-width:90%; max-height:80%; border-radius:20px;">
     </div>
 
     <script>
@@ -168,93 +137,73 @@
         tg.expand();
         tg.setHeaderColor('#0b0b14'); tg.setBackgroundColor('#0b0b14');
 
+        function log(msg) {
+            const el = document.getElementById('debug-console');
+            if(el) el.innerText = msg + "\n" + el.innerText;
+            console.log(msg);
+        }
+
         const UPLOAD_URL = 'https://api.sixapp.online/audio/upload';
         const SEARCH_URL = 'https://api.sixapp.online/search';
 
-        // --- 🆔 ИДЕНТИФИКАЦИЯ ---
+        // --- ИДЕНТИФИКАЦИЯ (v4 для сброса) ---
         const u = tg.initDataUnsafe.user;
-        let USER_ID;
-        let myName = "Игрок"; 
-        let myPhoto = "";
-
-        // Случайные имена
-        const testNames = ["Алекс", "Макс", "Дэн", "Оля", "Катя", "Ник", "Лиза"];
-        const randomNum = Math.floor(Math.random() * 999);
-        const randomName = testNames[Math.floor(Math.random() * testNames.length)] + " #" + randomNum;
+        let USER_ID, myName = "Игрок", myPhoto = "";
 
         if (u && u.id) {
-            console.log("Telegram User:", u);
             USER_ID = u.id;
             myName = u.first_name || "Аноним";
             myPhoto = u.photo_url || "";
         } else {
-            // Тест в браузере
-            let storedId = localStorage.getItem('six_real_id_v3'); 
+            let storedId = localStorage.getItem('six_real_id_v4'); 
             if (!storedId) {
                 storedId = Math.floor(Math.random() * 1000000) + 1;
-                localStorage.setItem('six_real_id_v3', storedId);
+                localStorage.setItem('six_real_id_v4', storedId);
             }
             USER_ID = parseInt(storedId);
-            
-            let storedName = localStorage.getItem('six_test_name_v3');
-            if (!storedName) {
-                storedName = randomName;
-                localStorage.setItem('six_test_name_v3', storedName);
-            }
-            myName = storedName;
+            myName = "Тест " + USER_ID;
         }
 
-        // UI Инициализация
-        const debugEl = document.getElementById('debug-id');
-        if (debugEl) debugEl.innerText = "ID: " + USER_ID;
-        const myNameLabel = document.getElementById('my-name-label');
-        if (myNameLabel) myNameLabel.innerText = myName;
-        if (myPhoto) {
-            const myAva = document.getElementById('my-avatar');
-            const finalMyAva = document.getElementById('final-my-ava');
-            if (myAva) myAva.style.backgroundImage = `url('${myPhoto}')`;
-            if (finalMyAva) finalMyAva.style.backgroundImage = `url('${myPhoto}')`;
-        }
+        document.getElementById('debug-id').innerText = "ID: " + USER_ID;
+        document.getElementById('my-name-label').innerText = myName;
+        if (myPhoto) document.getElementById('my-avatar').style.backgroundImage = `url('${myPhoto}')`;
 
-        let searchInterval;
+        // Глобальные переменные
+        let searchInterval = null;
         let currentPhase = "";
+        let currentAudio = null;
+        let isGameEnding = false; // Блокировка спама алертов
 
-        // 🔥 НОВОЕ: ПРОВЕРКА ПРИ ЗАПУСКЕ (АВТО-РЕКОННЕКТ)
-        async function checkActiveGame() {
-            try {
-                // Сразу спрашиваем сервер: "Я в игре?"
-                const response = await fetch(SEARCH_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ user_id: USER_ID, name: myName, photo: myPhoto })
-                });
-                const data = await response.json();
-
-                if (data.status === 'in_game') {
-                    console.log("♻️ Обнаружена активная игра! Реконнект...");
-                    // Сразу перекидываем в игру, минуя лобби
-                    document.getElementById('screen-lobby').classList.remove('active');
-                    document.getElementById('screen-game').classList.add('active');
-                    
-                    // Запускаем опрос (чтобы таймер пошел)
-                    startPolling();
-                }
-            } catch (e) {
-                console.error("Ошибка авто-входа:", e);
+        // 🟢 ФУНКЦИЯ ПОЛНОГО ВЫХОДА
+        function forceExit() {
+            log("🛑 EXIT");
+            if (searchInterval) {
+                clearInterval(searchInterval);
+                searchInterval = null;
             }
+            if (currentAudio) { currentAudio.pause(); currentAudio = null; }
+            
+            // Сброс UI
+            document.getElementById('screen-game').classList.remove('active');
+            document.getElementById('screen-search').classList.remove('active');
+            document.getElementById('screen-lobby').classList.add('active');
+            
+            currentPhase = "";
+            isGameEnding = false;
         }
 
-        // --- 1. СТАРТ (Ручной) ---
-        async function startSearching() {
+        // 🟢 СТАРТ
+        function startSearching() {
             tg.HapticFeedback.impactOccurred('heavy');
             document.getElementById('screen-lobby').classList.remove('active');
             document.getElementById('screen-search').classList.add('active');
+            
+            isGameEnding = false;
             startPolling();
         }
 
-        // --- 2. ОПРОС ---
+        // 🟢 ОПРОС СЕРВЕРА
         function startPolling() {
-            // Если уже запущен, не дублируем
             if (searchInterval) clearInterval(searchInterval);
 
             searchInterval = setInterval(async () => {
@@ -267,143 +216,118 @@
                     const data = await response.json();
                     
                     if (data.status === 'in_game') {
+                        // Переход на экран игры
                         if (!document.getElementById('screen-game').classList.contains('active')) {
                             document.getElementById('screen-search').classList.remove('active');
                             document.getElementById('screen-game').classList.add('active');
-                            tg.HapticFeedback.notificationOccurred('success');
                         }
                         updateGameUI(data);
                     }
                     else if (data.status === 'searching') {
-                        // Если нас выкинуло из игры (игра удалилась), возвращаем в лобби
+                        // Если мы были в игре, но сервер сказал "searching" -> ИГРА УДАЛЕНА
                         if (document.getElementById('screen-game').classList.contains('active')) {
-                             alert("Игра окончена!");
-                             location.reload(); // Перезагружаем страницу для чистого старта
+                             if (!isGameEnding) {
+                                 isGameEnding = true;
+                                 log("Game deleted by server.");
+                                 alert("Игра завершена!");
+                                 forceExit();
+                             }
                         }
                     }
-
-                } catch (error) { console.error("Ошибка:", error); }
+                } catch (error) { console.error("Poll err"); }
             }, 1000); 
         }
 
-        // --- 3. ОБНОВЛЕНИЕ UI ---
+        // 🟢 ОБНОВЛЕНИЕ ЭКРАНА
         function updateGameUI(data) {
-            // 1. Таймер и Вопрос
-            document.getElementById('game-timer').innerText = `00:${data.time_left}`;
+            // 1. Исправленный таймер (00:09)
+            const timer = document.getElementById('game-timer');
+            let tl = data.time_left;
+            timer.innerText = `00:${tl < 10 ? '0'+tl : tl}`;
+            
             document.getElementById('q-text-val').innerText = data.question;
 
-            // 2. 🔥 ОБНОВЛЕНИЕ НОМЕРА РАУНДА (если сервер его присылает)
-            if (data.round) {
-                document.querySelector('.q-label').innerText = 'РАУНД ' + data.round;
-            }
-
-            // 3. Соперник (Имя и Фото)
+            // 2. Соперник
             const oppNameEl = document.getElementById('opponent-name');
             if (oppNameEl.innerText !== data.opponent_name) {
                 oppNameEl.innerText = data.opponent_name;
                 const oppAva = document.getElementById('opponent-avatar');
-                // Если фото нет, ставим заглушку
                 const photo = (data.opponent_photo && data.opponent_photo !== "null") ? data.opponent_photo : 'https://randomuser.me/api/portraits/lego/1.jpg';
                 oppAva.style.backgroundImage = `url('${photo}')`;
-                oppAva.classList.add('blurred'); // Блюр всегда включен, пока не кликнешь
+                oppAva.classList.add('blurred');
             }
 
-            // 4. Смена Фаз
+            // 3. Смена Фаз
             if (currentPhase !== data.phase) {
                 currentPhase = data.phase;
+                log(`ФАЗА: ${currentPhase}`);
                 
                 if (currentPhase === 'recording') {
-                    // Фаза записи: показываем микрофон, убираем плеер
-                    document.getElementById('mic-wrapper').style.display = 'flex';
+                    document.getElementById('controls').style.display = 'flex'; // Показываем пульт
                     document.getElementById('player-box-content').style.display = 'none';
                     document.getElementById('q-box-content').style.display = 'block';
-                    // Удаляем старые значки
+                    
+                    // Чистим старые значки ТОЛЬКО при начале записи
                     document.querySelectorAll('.notify-badge').forEach(e => e.remove());
                 } 
                 else if (currentPhase === 'listening') {
-                    // Фаза прослушки: прячем микрофон
-                    document.getElementById('mic-wrapper').style.display = 'none';
+                    document.getElementById('controls').style.display = 'none'; // Прячем пульт
                     tg.HapticFeedback.notificationOccurred('warning');
-                }
-                else if (currentPhase === 'voting') {
-                     // 🔥 КОНЕЦ ИГРЫ: Выкидываем в лобби
-                     alert("Игра завершена! Переход в лобби.");
-                     document.getElementById('screen-game').classList.remove('active');
-                     document.getElementById('screen-lobby').classList.add('active');
-                     currentPhase = ""; // Сброс
                 }
             }
 
-            // 5. 🔥 ПРОСТОЙ ЗНАЧОК (Только один тип)
-            // Если фаза "Слушаем" и у соперника есть аудио -> Рисуем значок
+            // 4. Значок Play (Без мигания)
             if (data.phase === 'listening' && data.opponent_audio) {
-                 const oppAvatarDiv = document.getElementById('opponent-avatar');
-                 const oppCard = oppAvatarDiv.parentElement; // Крепим к карточке
+                 const oppCard = document.getElementById('opponent-card');
                  
-                 // Если значка еще нет - создаем
+                 // Добавляем, только если НЕТ значка
                  if (!oppCard.querySelector('.notify-badge')) {
                      const badge = document.createElement('div');
                      badge.className = 'notify-badge';
-                     badge.innerText = '▶️'; // Простой понятный значок
-                     
-                     // По клику на карточку - играем звук
-                     oppCard.onclick = function() { 
-                         playOpponentAudio(data.opponent_audio); 
-                     };
-                     
+                     badge.innerText = '▶️';
+                     oppCard.onclick = function() { playOpponentAudio(data.opponent_audio); };
                      oppCard.appendChild(badge);
                      tg.HapticFeedback.notificationOccurred('success');
+                     log("Значок Play добавлен");
                  }
             }
         }
 
-        let currentAudio = null;
-
+        // 🟢 АУДИО
         function playOpponentAudio(audioUrl) {
-             // Визуальный эффект
+             log("Play: " + audioUrl);
              tg.HapticFeedback.impactOccurred('medium');
+             
+             if (currentAudio) { currentAudio.pause(); }
+
              document.getElementById('q-box-content').style.display = 'none';
              const pBox = document.getElementById('player-box-content');
              pBox.style.display = 'flex';
-             
-             // Показываем плеер
              pBox.innerHTML = `
                 <div class="play-btn" onclick="stopAudio()">⏸</div>
                 <div style="font-size:10px; color:var(--neon-pink); margin-right:5px;">СЛУШАЕМ...</div>
                 <div class="wave-visual"><div class="wave-fill" style="animation: fillWave 5s linear forwards;"></div></div>
             `;
 
-             // 🔥 ЗАПУСК РЕАЛЬНОГО АУДИО
-             if (currentAudio) { currentAudio.pause(); }
-             currentAudio = new Audio(audioUrl);
-             currentAudio.play().catch(e => console.log("Ошибка аудио:", e));
-
-             // Когда доиграет - убрать плеер
-             currentAudio.onended = function() {
-                pBox.style.display = 'none';
-                document.getElementById('q-box-content').style.display = 'block';
-             };
+            currentAudio = new Audio(audioUrl);
+            currentAudio.play().catch(e => alert("Err: " + e));
+            currentAudio.onended = function() { stopAudio(); };
         }
-        
-        // Вспомогательная функция остановки
+
         function stopAudio() {
-            if (currentAudio) { currentAudio.pause(); }
+            if (currentAudio) { currentAudio.pause(); currentAudio = null; }
             document.getElementById('player-box-content').style.display = 'none';
             document.getElementById('q-box-content').style.display = 'block';
         }
 
-        // --- ЗАПИСЬ ---
+        // 🟢 ЗАПИСЬ
         let isRecording = false;
         let mediaRecorder; 
         let audioChunks = []; 
 
         async function toggleRecording() {
-            if (currentPhase !== 'recording') {
-                alert("Сейчас нельзя записывать!");
-                return;
-            }
+            if (currentPhase !== 'recording') return;
             const btn = document.getElementById('mic-btn');
-            const playerBox = document.getElementById('player-box-content');
             
             if (!isRecording) {
                 try {
@@ -416,17 +340,11 @@
                     isRecording = true;
                     btn.classList.add('recording');
                     tg.HapticFeedback.impactOccurred('medium');
-                    document.getElementById('q-box-content').style.display = 'none';
-                    if(playerBox) {
-                        playerBox.style.display = 'flex';
-                        playerBox.innerHTML = `<div style="color:red; font-size:12px;">ЗАПИСЬ...</div>`;
-                    }
                 } catch (err) { alert('Нет микрофона'); }
             } else {
                 isRecording = false;
                 btn.classList.remove('recording');
                 if (mediaRecorder) mediaRecorder.stop();
-                if(playerBox) playerBox.innerHTML = `<div style="color:#00ff88; font-size:12px;">ОТПРАВКА...</div>`;
             }
         }
         
@@ -436,27 +354,25 @@
             const formData = new FormData();
             formData.append('audio_file', audioBlob, `voice_${Date.now()}.ogg`);
             formData.append('user_id', USER_ID); 
+            
+            // Временный визуал отправки
+            const pBox = document.getElementById('player-box-content');
+            document.getElementById('q-box-content').style.display = 'none';
+            pBox.style.display = 'flex';
+            pBox.innerHTML = `<div style="color:#00ff88; font-size:12px;">ОТПРАВКА...</div>`;
 
             fetch(UPLOAD_URL, { method: 'POST', body: formData })
             .then(res => res.json())
             .then(data => {
-                const pBox = document.getElementById('player-box-content');
-                const qBox = document.getElementById('q-box-content');
-                if (pBox) pBox.style.display = 'none';
-                if (qBox) qBox.style.display = 'block';
+                pBox.style.display = 'none';
+                document.getElementById('q-box-content').style.display = 'block';
+                log("Upload OK");
             })
-            .catch(err => alert('Ошибка отправки: ' + err));
+            .catch(err => alert('Err: ' + err));
         }
 
         function sendGift(type) { tg.HapticFeedback.impactOccurred('medium'); alert(`Подарок: ${type}`); }
-        function voteFor(name) {}
-        function skipVote() {}
-        function buyPack() { tg.sendData(JSON.stringify({action:"buy_pack"})); }
-        function closeApp() { tg.close(); }
-
-        // 🔥 ЗАПУСК АВТО-ПРОВЕРКИ ПРИ ЗАГРУЗКЕ
-        checkActiveGame();
-        
+        function buyPack() {}
     </script>
 </body>
 </html>
