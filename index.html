@@ -142,38 +142,29 @@
     <script>
         let tg = window.Telegram.WebApp;
         tg.expand();
-        
-        // Настройки цветов Telegram
-        tg.setHeaderColor('#0b0b14'); 
-        tg.setBackgroundColor('#0b0b14');
+        tg.setHeaderColor('#0b0b14'); tg.setBackgroundColor('#0b0b14');
 
-        // --- ⚙️ НАСТРОЙКИ СЕРВЕРА ---
         const UPLOAD_URL = 'https://api.sixapp.online/audio/upload';
         const SEARCH_URL = 'https://api.sixapp.online/search';
 
-        // --- 🆔 ИДЕНТИФИКАЦИЯ И ДАННЫЕ ---
+        // --- 🆔 ИДЕНТИФИКАЦИЯ (Твой рабочий код) ---
         const u = tg.initDataUnsafe.user;
         let USER_ID;
         let myName = "Игрок"; 
         let myPhoto = "";
 
-        // Случайные имена (ТОЛЬКО если телеграм не отдал реальные)
+        // Случайные имена
         const testNames = ["Алекс", "Макс", "Дэн", "Оля", "Катя", "Ник", "Лиза"];
         const randomNum = Math.floor(Math.random() * 999);
         const randomName = testNames[Math.floor(Math.random() * testNames.length)] + " #" + randomNum;
 
         if (u && u.id) {
-            // ✅ ВАРИАНТ 1: ЗАШЛИ ЧЕРЕЗ ТЕЛЕГРАМ (КНОПКУ)
-            // Это то, что будет работать у реальных игроков
             console.log("Telegram User:", u);
             USER_ID = u.id;
             myName = u.first_name || "Аноним";
             myPhoto = u.photo_url || "";
         } else {
-            // ⚠️ ВАРИАНТ 2: ЗАШЛИ ЧЕРЕЗ БРАУЗЕР (ИЛИ ПРЯМУЮ ССЫЛКУ)
-            // Генерируем фейк, чтобы можно было тестить с компа
-            
-            // 1. ID (Сменил ключ на v3, чтобы сбросить старое)
+            // Тест в браузере
             let storedId = localStorage.getItem('six_real_id_v3'); 
             if (!storedId) {
                 storedId = Math.floor(Math.random() * 1000000) + 1;
@@ -181,24 +172,20 @@
             }
             USER_ID = parseInt(storedId);
             
-            // 2. Имя (Сменил ключ на v3, чтобы сбросить старое)
             let storedName = localStorage.getItem('six_test_name_v3');
             if (!storedName) {
-                storedName = randomName; // Берем новое случайное имя
+                storedName = randomName;
                 localStorage.setItem('six_test_name_v3', storedName);
             }
             myName = storedName;
         }
 
-        // Вывод ID для проверки
         const debugEl = document.getElementById('debug-id');
         if (debugEl) debugEl.innerText = "ID: " + USER_ID;
 
-        // Вставляем Имя в интерфейс (вместо "ВЫ")
         const myNameLabel = document.getElementById('my-name-label');
         if (myNameLabel) myNameLabel.innerText = myName;
 
-        // Установка аватарки
         if (myPhoto) {
             const myAva = document.getElementById('my-avatar');
             const finalMyAva = document.getElementById('final-my-ava');
@@ -207,105 +194,146 @@
         }
 
         let searchInterval;
+        let currentPhase = ""; // Чтобы отслеживать смену фаз
 
-
-        // --- 1. ФУНКЦИЯ СТАРТА (ПРИВЯЖИТЕ К КНОПКЕ START) ---
+        // --- 1. СТАРТ ---
         async function startSearching() {
             tg.HapticFeedback.impactOccurred('heavy');
-            
-            // Переключаем экраны (Лобби -> Поиск)
             document.getElementById('screen-lobby').classList.remove('active');
             document.getElementById('screen-search').classList.add('active');
-            
-            // Запускаем опрос сервера
             startPolling();
         }
 
-        // --- 2. ОПРОС СЕРВЕРА (ПУЛЬС) ---
+        // --- 2. УМНЫЙ ОПРОС (СЛУШАЕМ РЕЖИССЕРА) ---
         function startPolling() {
             searchInterval = setInterval(async () => {
                 try {
                     const response = await fetch(SEARCH_URL, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        // Отправляем на сервер и ФОТО тоже, чтобы он мог передать его сопернику
                         body: JSON.stringify({ user_id: USER_ID, name: myName, photo: myPhoto })
                     });
                     const data = await response.json();
                     
-                    // ЕСЛИ ПАРА НАЙДЕНА
-                    if (data.status === 'matched') {
-                        clearInterval(searchInterval);
-                        
-                        document.getElementById('screen-search').classList.remove('active');
-                        document.getElementById('screen-game').classList.add('active');
-                        
-                        // 🆕 ПЕРЕДАЕМ ДАННЫЕ С СЕРВЕРА В ИГРУ
-                        setupGame(data.opponent_name, data.opponent_photo);
-                        
-                        tg.HapticFeedback.notificationOccurred('success');
+                    // А. МЫ В ИГРЕ
+                    if (data.status === 'in_game') {
+                        // Переключаем экран, если еще не там
+                        if (!document.getElementById('screen-game').classList.contains('active')) {
+                            document.getElementById('screen-search').classList.remove('active');
+                            document.getElementById('screen-game').classList.add('active');
+                            tg.HapticFeedback.notificationOccurred('success');
+                        }
+
+                        // ОБНОВЛЯЕМ ИНТЕРФЕЙС ПО ДАННЫМ СЕРВЕРА
+                        updateGameUI(data);
                     }
+                    
+                    // Б. ЖДЕМ (ДЛЯ ПЕРВОГО ИГРОКА)
+                    else if (data.status === 'matched_wait') {
+                        // Просто ждем, пока сервер создаст игру и переведет нас в 'in_game'
+                        console.log("Ждем старта игры...");
+                    }
+
                 } catch (error) {
-                    console.error("Polling error:", error);
+                    console.error("Ошибка:", error);
                 }
-            }, 2000); 
+            }, 1000); // Опрашиваем каждую секунду для точности таймера
         }
 
-        // --- 3. НАСТРОЙКА ИГРЫ ---
-        // 🆕 Теперь функция принимает реальные данные
-        function setupGame(oppName, oppPhoto) {
-            
-            // 1. Ставим Имя
-            const oppNameEl = document.getElementById('opponent-name');
-            if (oppNameEl) oppNameEl.innerText = oppName || "Игрок";
-            
-            // 2. Ставим Фото (с блюром)
-            const oppAva = document.getElementById('opponent-avatar');
-            const finalOppAva = document.getElementById('final-opp-ava'); // Для финала
-            
-            // Если фото нет, ставим заглушку
-            const photoUrl = (oppPhoto && oppPhoto !== "null") ? oppPhoto : 'https://randomuser.me/api/portraits/lego/1.jpg';
-            
-            if (oppAva) {
-                oppAva.classList.add('blurred'); // Важно: блюр включен
-                oppAva.style.backgroundImage = `url('${photoUrl}')`;
-            }
-            if (finalOppAva) {
-                finalOppAva.style.backgroundImage = `url('${photoUrl}')`;
-            }
-            
-            // Запуск раунда
-            runRound(1, "Твой самый стыдный поступок?", "Твой идеальный выходной?");
-        }
-
-        function runRound(num, q1, q2) {
-            const text = (num === 1) ? q1 : q2;
-            const qTextEl = document.getElementById('q-text-val');
-            if (qTextEl) qTextEl.innerText = text;
-            
-            let timeLeft = 15; 
+        // --- 3. ОБНОВЛЕНИЕ ИНТЕРФЕЙСА ---
+        function updateGameUI(data) {
+            // 1. Таймер (берем с сервера!)
             const timer = document.getElementById('game-timer');
+            const tl = data.time_left;
+            timer.innerText = `00:${tl < 10 ? '0'+tl : tl}`;
             
-            const interval = setInterval(() => {
-                timeLeft--;
-                if (timer) timer.innerText = `00:${timeLeft < 10 ? '0'+timeLeft : timeLeft}`;
+            // 2. Вопрос
+            document.getElementById('q-text-val').innerText = data.question;
+
+            // 3. Данные соперника
+            const oppNameEl = document.getElementById('opponent-name');
+            if (oppNameEl.innerText !== data.opponent_name) {
+                oppNameEl.innerText = data.opponent_name;
+                const oppAva = document.getElementById('opponent-avatar');
+                const photo = (data.opponent_photo && data.opponent_photo !== "null") ? data.opponent_photo : 'https://randomuser.me/api/portraits/lego/1.jpg';
+                oppAva.style.backgroundImage = `url('${photo}')`;
+                oppAva.classList.add('blurred');
+            }
+
+            // 4. ОБРАБОТКА ФАЗ (РЕЖИССЕР)
+            if (currentPhase !== data.phase) {
+                currentPhase = data.phase;
+                console.log("НОВАЯ ФАЗА:", currentPhase);
                 
-                if (timeLeft <= 0) {
-                    clearInterval(interval);
-                    if (num === 1) runRound(2, q1, q2);
-                    else endGame();
+                // Сброс UI при смене фазы
+                if (currentPhase === 'recording') {
+                    // Показываем микрофон
+                    document.getElementById('mic-wrapper').style.display = 'flex';
+                    // Прячем плеер
+                    document.getElementById('player-box-content').style.display = 'none';
+                    document.getElementById('q-box-content').style.display = 'block';
+                    // Убираем значки у соперника
+                     document.querySelector('.player-card.team-left .notify-badge')?.remove();
+                } 
+                else if (currentPhase === 'listening') {
+                    // Прячем микрофон (время вышло!)
+                    document.getElementById('mic-wrapper').style.display = 'none';
+                    tg.HapticFeedback.notificationOccurred('warning');
                 }
-            }, 1000);
+            }
+
+            // 5. ЛОГИКА "SPOTLIGHT" (ЗНАЧКИ НА АВАТАРКЕ)
+            // Если фаза ПРОСЛУШКА и есть аудио от соперника -> Рисуем значок PLAY
+            if (data.phase === 'listening' && data.opponent_audio === 'READY') {
+                 const oppCard = document.querySelector('#opponent-avatar').parentElement;
+                 if (!oppCard.querySelector('.notify-badge')) {
+                     // Добавляем значок PLAY
+                     const badge = document.createElement('div');
+                     badge.className = 'notify-badge';
+                     badge.innerText = '▶️';
+                     // Делаем аватарку кликабельной
+                     oppCard.onclick = function() { playOpponentAudio(); };
+                     document.querySelector('#opponent-avatar').appendChild(badge);
+                     tg.HapticFeedback.notificationOccurred('success');
+                 }
+            }
         }
 
-        // --- 4. ЗАПИСЬ АУДИО (РАБОЧАЯ) ---
+        // --- 4. ПРОИГРЫВАНИЕ АУДИО (ИМИТАЦИЯ) ---
+        function playOpponentAudio() {
+             // В MVP мы пока не скачиваем реальный файл (это сложно с Nginx), 
+             // а просто показываем визуализацию, что "играет".
+             tg.HapticFeedback.impactOccurred('medium');
+             
+             document.getElementById('q-box-content').style.display = 'none';
+             const pBox = document.getElementById('player-box-content');
+             pBox.style.display = 'flex';
+             pBox.innerHTML = `
+                <div class="play-btn">⏸</div>
+                <div style="font-size:10px; color:var(--neon-pink); margin-right:5px;">СОПЕРНИК</div>
+                <div class="wave-visual"><div class="wave-fill" style="animation: fillWave 5s linear forwards;"></div></div>
+            `;
+            
+            // Через 5 секунд возвращаем вопрос
+            setTimeout(() => {
+                pBox.style.display = 'none';
+                document.getElementById('q-box-content').style.display = 'block';
+            }, 5000);
+        }
+
+        // --- 5. ЗАПИСЬ (ОТПРАВКА НА СЕРВЕР) ---
         let isRecording = false;
         let mediaRecorder; 
         let audioChunks = []; 
 
         async function toggleRecording() {
+            // Если сервер говорит, что сейчас не фаза записи - запрещаем
+            if (currentPhase !== 'recording') {
+                alert("Сейчас нельзя записывать! Слушай других.");
+                return;
+            }
+
             const btn = document.getElementById('mic-btn');
-            const qBox = document.getElementById('q-box-content');
             const playerBox = document.getElementById('player-box-content');
             
             if (!isRecording) {
@@ -314,34 +342,29 @@
                     mediaRecorder = new MediaRecorder(stream);
                     mediaRecorder.ondataavailable = event => audioChunks.push(event.data);
                     mediaRecorder.onstop = sendAudioData;
-                    
                     audioChunks = [];
                     mediaRecorder.start();
                     isRecording = true;
-                    
-                    if (btn) btn.classList.add('recording');
+                    btn.classList.add('recording');
                     tg.HapticFeedback.impactOccurred('medium');
-                    
-                    if (qBox) qBox.style.display = 'none';
-                    if (playerBox) {
+                    // Визуал
+                    document.getElementById('q-box-content').style.display = 'none';
+                    if(playerBox) {
                         playerBox.style.display = 'flex';
-                        playerBox.innerHTML = `<div style="font-size:12px; color:red;">ЗАПИСЬ...</div>`;
+                        playerBox.innerHTML = `<div style="color:red; font-size:12px;">ЗАПИСЬ...</div>`;
                     }
-                } catch (err) {
-                    alert('Нет доступа к микрофону! Проверьте настройки.');
-                }
+                } catch (err) { alert('Нет микрофона'); }
             } else {
                 isRecording = false;
-                if (btn) btn.classList.remove('recording');
+                btn.classList.remove('recording');
                 if (mediaRecorder) mediaRecorder.stop();
-                if (playerBox) playerBox.innerHTML = `<div style="color:#00ff88; font-size:12px;">ОТПРАВКА...</div>`;
+                if(playerBox) playerBox.innerHTML = `<div style="color:#00ff88; font-size:12px;">ОТПРАВКА...</div>`;
             }
         }
         
         function sendAudioData() {
             if (audioChunks.length === 0) return;
             const audioBlob = new Blob(audioChunks, { type: 'audio/ogg; codecs=opus' });
-            
             const formData = new FormData();
             formData.append('audio_file', audioBlob, `voice_${Date.now()}.ogg`);
             formData.append('user_id', USER_ID); 
@@ -349,72 +372,20 @@
             fetch(UPLOAD_URL, { method: 'POST', body: formData })
             .then(res => res.json())
             .then(data => {
-                // Возврат интерфейса
-                alert('✅ Отправлено!'); 
-                const pBox = document.getElementById('player-box-content');
-                const qBox = document.getElementById('q-box-content');
-                if (pBox) pBox.style.display = 'none';
-                if (qBox) qBox.style.display = 'block';
+                // Возвращаем вопрос на экран
+                document.getElementById('player-box-content').style.display = 'none';
+                document.getElementById('q-box-content').style.display = 'block';
+                if(data.status !== 'success') alert("Ошибка: " + data.message);
             })
             .catch(err => alert('Ошибка отправки: ' + err));
         }
 
-        // --- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ (ПОДАРКИ, ЗУМ) ---
-        function sendGift(type) {
-            tg.HapticFeedback.impactOccurred('medium');
-            alert(`Выбрано: ${type}`);
-        }
-
-        function endGame() {
-            const topBar = document.getElementById('top-bar');
-            const controls = document.getElementById('controls');
-            const voteScreen = document.getElementById('vote-screen');
-            
-            if (topBar) topBar.style.display = 'none';
-            if (controls) controls.style.display = 'none';
-            if (voteScreen) voteScreen.style.display = 'flex';
-        }
-
-        function voteFor(name) {
-            // Проверка зума
-            const playerCard = event.currentTarget; 
-            const avatar = playerCard.querySelector('.avatar');
-            if (avatar && avatar.classList.contains('unblurred')) {
-                const imageUrl = avatar.style.backgroundImage.slice(5, -2);
-                const zoomImg = document.getElementById('zoom-image');
-                const zoomOverlay = document.getElementById('zoom-overlay');
-                if (zoomImg) zoomImg.src = imageUrl;
-                if (zoomOverlay) zoomOverlay.classList.add('active');
-                return;
-            }
-
-            // Голосование
-            tg.HapticFeedback.impactOccurred('heavy');
-            const voteScreen = document.getElementById('vote-screen');
-            if (voteScreen) voteScreen.style.display = 'none';
-            
-            // Снятие блюра (демо)
-            const oppAva = document.getElementById('opponent-avatar');
-            if (oppAva) {
-                oppAva.classList.remove('blurred');
-                oppAva.classList.add('unblurred');
-            }
-
-            setTimeout(() => {
-                document.getElementById('screen-game').classList.remove('active');
-                document.getElementById('match-overlay').classList.add('active');
-            }, 1500);
-        }
-
-        function skipVote() { voteFor('Никто'); }
+        // Остальные функции
+        function sendGift(type) { tg.HapticFeedback.impactOccurred('medium'); alert(`Подарок: ${type}`); }
+        function voteFor(name) { alert("Голосование пока не активно"); }
+        function skipVote() {}
         function buyPack() { tg.sendData(JSON.stringify({action:"buy_pack"})); }
         function closeApp() { tg.close(); }
-        
-        // Зум оверлей клик
-        const zoomOv = document.getElementById('zoom-overlay');
-        if (zoomOv) {
-            zoomOv.onclick = function() { this.classList.remove('active'); }
-        }
     </script>
 </body>
 </html>
