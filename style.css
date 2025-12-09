@@ -1,17 +1,14 @@
 :root { --neon-blue: #00f3ff; --neon-pink: #ff00ff; --bg-dark: #0b0b14; --gold: #ffd700; --gold-premium: #FFD700; --silver-premium: #E0E0E0; --uv-purple: #B800FF; --emerald: #39FF14;}
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
-/* 🟢 ОБНОВЛЕННЫЙ ФОН: ГЛУБИНА + ШУМ (FILM GRAIN) */
 body { 
     margin: 0; 
     background-color: #030307;
     background-image: 
-        /* 1. НЕОНОВЫЕ ГРАДИЕНТЫ ДЛЯ ГЛУБИНЫ */
         radial-gradient(circle at 15% 25%, rgba(0, 243, 255, 0.08) 0%, transparent 40%),
         radial-gradient(circle at 85% 75%, rgba(255, 0, 255, 0.08) 0%, transparent 40%),
-        /* 2. НОВЫЙ СЛОЙ: СТАТИЧЕСКИЙ ШУМ (Очень тонкий паттерн) */
         url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAB3RJTUUH5gIUCyUe5h23jAAAAB10RVh0Q29tbWVudEFscGhhYmF0IFNob3BwZXIgMTYxL7I0eQAAABpJREFUeJxjYmBgYGBgYGBgYGEIAQEAIAAKQgAFAwB0rQAAAABJRU5ErkJggg==');
-    background-size: 100%, 100%, 2px 2px; /* Применяем размер 2x2px только для шума */
+    background-size: 100%, 100%, 2px 2px;
     
     color: white; font-family: 'Orbitron', sans-serif; 
     height: 100vh; overflow: hidden; 
@@ -21,7 +18,6 @@ body {
 .screen { display: none; height: 100%; flex-direction: column; width: 100%; position: relative; }
 .screen.active { display: flex; }
 
-/* --- ЛОББИ --- */
 .lobby-container { 
     flex-grow: 1; display: flex; flex-direction: column; 
     justify-content: center; align-items: center; 
@@ -55,14 +51,12 @@ body {
 .nav-item { font-size: 26px; opacity: 0.5; transition: 0.2s; cursor: pointer; }
 .nav-item.active { opacity: 1; color: var(--neon-blue); transform: translateY(-5px); text-shadow: 0 0 10px var(--neon-blue); }
 
-/* --- ИГРОВОЙ СТОЛ --- */
 .game-header { 
     padding: 15px 20px; display: flex; justify-content: space-between; 
     font-weight: 800; font-size: 14px; letter-spacing: 1px; color: #888;
 }
 #game-timer { color: white; font-size: 18px; text-shadow: 0 0 10px red; }
 
-/* SPOTLIGHT */
 .top-spotlight {
     position: absolute; top: 60px; left: 50%; transform: translateX(-50%);
     width: 90%; height: 60px;
@@ -81,7 +75,6 @@ body {
 .wave-visual { flex-grow: 1; height: 4px; background: #333; margin: 0 10px; border-radius: 2px; position: relative; }
 .wave-fill { height: 100%; width: 40%; background: white; border-radius: 2px; }
 
-/* СЕТКА (Центрирование через обертку) */
 .center-wrapper {
     flex-grow: 1; 
     display: flex; 
@@ -91,15 +84,10 @@ body {
     transform: translateY(-40px);
 }
 
-/* СЕТКА АВАТАРОВ (Сдвинута вниз) */
 .table-grid { 
-    /* Сброс ручных отступов - теперь за это отвечает обертка */
     margin: 0; padding: 0;
-    
-    /* Дополнительный отступ сверху, чтобы отлепить от вопроса */
     padding-top: 50px; 
     padding-bottom: 50px; 
-
     display: grid; 
     grid-template-columns: 1fr 1fr; 
     gap: 30px 90px; 
@@ -121,13 +109,25 @@ body {
     100% { box-shadow: 0 0 5px rgba(255, 0, 255, 0.2); }
 }
 
+/* СТИЛИ ЗНАЧКА PLAY (ИЗ INDEX.HTML) */
 .notify-badge {
-    position: absolute; top: 0; right: 0; width: 26px; height: 26px;
-    background: var(--neon-blue); color: black; border-radius: 50%;
+    position: absolute;
+    bottom: -5px; 
+    right: -5px;
+    width: 30px; 
+    height: 30px;
+    background: #ff0055; 
+    color: white;
+    border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
-    font-size: 14px; border: 2px solid #000; transform: scale(0); transition: 0.3s;
+    font-size: 14px;
+    border: 2px solid white;
+    box-shadow: 0 0 5px #ff0055;
+    z-index: 100;
+    cursor: pointer;
+    animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
-.has-voice .notify-badge { transform: scale(1); }
+@keyframes popIn { 0% { transform: scale(0); } 100% { transform: scale(1); } }
 
 .name-tag {
     margin-top: 8px; font-size: 12px; font-weight: 700;
@@ -135,26 +135,17 @@ body {
 }
 
 .team-left .avatar { 
-    border-color: #B800FF; /* Фиолетовый ободок */
-    
-    /* Layered Shadow: Внешний ореол + Внутренний четкий свет */
-    box-shadow: 
-        0 0 12px #B800FF, /* Сильное внешнее свечение */
-        0 0 2px #FFFFFF;  /* Тонкая белая линия для резкости */
+    border-color: #B800FF;
+    box-shadow: 0 0 12px #B800FF, 0 0 2px #FFFFFF;
 }
 .team-right .avatar { 
-    border-color: #39FF14; /* Изумрудный ободок */
-    
-    /* Layered Shadow: Внешний ореол + Внутренний четкий свет */
-    box-shadow: 
-        0 0 12px #39FF14, /* Сильное внешнее свечение */
-        0 0 2px #FFFFFF;  /* Тонкая белая линия для резкости */
+    border-color: #39FF14;
+    box-shadow: 0 0 12px #39FF14, 0 0 2px #FFFFFF;
 }
-.blurred { filter: blur(4px); opacity: 0.9; }
-.unblurred { filter: blur(0px); opacity: 1; animation: none; } /* Убираем пульс после анблюра */
 
+.blurred { filter: blur(8px) brightness(0.8); transition: filter 0.5s; opacity: 0.9; }
+.unblurred { filter: blur(0px); opacity: 1; animation: none; }
 
-/* 🟢 ПРЕМИУМ ПАНЕЛЬ (DASHBOARD) */
 .controls-container {
     position: absolute; bottom: 20px; left: 10px; right: 10px;
     height: 140px;
@@ -191,66 +182,37 @@ body {
 .gift-icon { width: 24px; height: 24px; filter: drop-shadow(0 2px 5px rgba(0,0,0,0.5)); }
 .gift-price { font-size: 11px; font-weight: 800; color: var(--gold); }
 
-/* Центральный Микрофон и клавиатура */
 .mic-wrapper {
-            position: relative; 
-            top: 0; /* Сбрасываем старый офсет */
-            display: flex; 
-            flex-direction: column; /* Элементы идут вертикально */
-            justify-content: center;
-            align-items: center; /* Центрируем все дочерние элементы */
-            padding-bottom: 5px; /* Небольшой отступ от нижнего края контейнера */
+    position: relative; 
+    top: 0;
+    display: flex; 
+    flex-direction: column; 
+    justify-content: center;
+    align-items: center; 
+    padding-bottom: 5px;
 }
 
 .mic-btn {
-            width: 90px; height: 90px;
-            /* 👇 ИЗМЕНЕНИЕ: Темный фон, чтобы свечение было видно */
-            background: rgba(255, 255, 255, 0.1); 
-            border-radius: 50%;
-            display: flex; justify-content: center; align-items: center;
-            
-            /* 👇 ИЗМЕНЕНИЕ: Неоновый синий ободок и тень */
-            box-shadow: 0 0 0 3px rgba(0, 243, 255, 0.5), 0 10px 25px rgba(0, 0, 0, 0.7);
-            border: 2px solid var(--neon-blue); /* Четкий синий ободок */
-            
-            font-size: 40px; cursor: pointer; z-index: 70;
-            transition: transform 0.1s;
+    width: 90px; height: 90px;
+    background: rgba(255, 255, 255, 0.1); 
+    border-radius: 50%;
+    display: flex; justify-content: center; align-items: center;
+    box-shadow: 0 0 0 3px rgba(0, 243, 255, 0.5), 0 10px 25px rgba(0, 0, 0, 0.7);
+    border: 2px solid var(--neon-blue);
+    font-size: 40px; cursor: pointer; z-index: 70;
+    transition: transform 0.1s;
 }
 
 .mic-btn:active { transform: scale(0.95); }
 
-.mic-icon { 
-            width: 40px; height: 40px; 
-            fill: var(--neon-blue); /* Иконка становится синей */
-}
+.mic-icon { width: 40px; height: 40px; fill: var(--neon-blue); }
 
 .mic-btn.recording { 
-            background: #ff0055; /* Красная заливка */
-            box-shadow: 0 0 60px #ff0055; /* Яркое красное свечение */
+    background: #ff0055; 
+    box-shadow: 0 0 60px #ff0055; 
 }
-.mic-btn.recording .mic-icon { 
-            fill: white; /* Иконка становится белой на красном фоне */
-}
+.mic-btn.recording .mic-icon { fill: white; }
 
-.keyboard-btn { 
-            position: relative; /* Встает в поток после микрофона */
-            margin-top: 10px; /* Отступ от микрофона */
-            
-            /* Сбрасываем старые absolute/corner стили */
-            right: auto;
-            bottom: auto;
-            
-            width: 45px; height: 45px; 
-            background: transparent; 
-            border-radius: 0; display: flex; justify-content: center; align-items: center;
-            cursor: pointer; z-index: 80;
-}
-.kb-icon { width: 20px; height: 20px; fill: white; opacity: 0.6; }
-
-/* Режим записи */
-.recording-mode .side-col, .recording-mode .keyboard-btn { opacity: 0.2; pointer-events: none; transition: 0.3s; }
-
-/* ГОЛОСОВАНИЕ */
 .vote-layer { 
     position: absolute; inset: 0; background: rgba(0,0,0,0.95); z-index: 90; 
     display: none; flex-direction: column; align-items: center; padding-top: 80px; backdrop-filter: blur(5px);
@@ -262,74 +224,38 @@ body {
     padding: 12px 0; width: 60%; border-radius: 30px; font-size: 14px; font-weight: bold; cursor: pointer; 
 }
 
-#match-overlay { background: #000; z-index: 200; justify-content: center; align-items: center; }
-.match-title { font-size: 40px; font-weight: 900; color: transparent; -webkit-text-stroke: 1px var(--neon-pink); margin-bottom: 30px; text-transform: uppercase; }
-.match-avatars { display: flex; gap: 20px; align-items: center; }
-.match-ava { width: 110px; height: 110px; border-radius: 50%; border: 4px solid var(--neon-pink); background-size: cover; }
-.match-btn { background: var(--neon-blue); color: black; border: none; padding: 15px 40px; border-radius: 30px; font-weight: 900; margin-top: 50px; box-shadow: 0 0 20px var(--neon-blue); }
-.highlight { z-index: 100; transform: scale(1.15); }
-.highlight .avatar { border-color: #00ff88; box-shadow: 0 0 30px #00ff88; }
-
-
-/* 🟢 СТИЛИ ДЛЯ УВЕЛИЧЕННОГО ПРОСМОТРА */
-#zoom-overlay {
-    position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0, 0, 0, 0.95); 
-    display: none; 
-    justify-content: center;
-    align-items: center;
+/* ОТЛАДКА И КНОПКА ВЫХОДА */
+#debug-console {
+    position: fixed; bottom: 0; left: 0; width: 100%; height: 60px;
+    background: rgba(0,0,0,0.8); color: lime; font-size: 10px;
+    font-family: monospace; overflow-y: scroll; z-index: 9999;
+    pointer-events: none; display: block;
 }
-#zoom-overlay.active { display: flex !important; }
+.force-exit-btn {
+    position: absolute; top: 10px; left: 10px;
+    background: rgba(255, 0, 0, 0.5); color: white;
+    border: 1px solid red; font-size: 10px; padding: 5px;
+    z-index: 5000; cursor: pointer;
+}
 
-/* 🟢 АДАПТАЦИЯ (Медиазапросы) */
+@keyframes spin { to { transform: rotate(360deg); } }
 
-/* 🤏 АДАПТАЦИЯ ДЛЯ МАЛЕНЬКИХ ТЕЛЕФОНОВ (iPhone SE, 8, Mini) */
 @media (max-height: 700px) {
-    
-    .controls-container {
-        height: 100px; /* Сжимаем панель */
-        bottom: 10px;
-    }
-    
-    .mic-btn { width: 70px; height: 70px; } /* Уменьшаем микрофон */
+    .controls-container { height: 100px; bottom: 10px; }
+    .mic-btn { width: 70px; height: 70px; }
     .mic-icon { width: 30px; height: 30px; }
     .mic-wrapper { top: -25px; }
-
-    /* Уменьшаем подарки */
     .gift-btn { padding: 4px 8px; width: 80px; }
     .gift-icon { width: 20px; height: 20px; }
     .gift-price { font-size: 9px; }
-    
-    /* Сжимаем сетку и аватарки */
-    .table-grid {
-        margin-top: 80px; 
-        padding-bottom: 120px;
-        gap: 10px;
-    }
-    .avatar { width: 70px; height: 70px; } /* Было 100 */
-    
-    /* Уменьшаем верхний блок */
+    .table-grid { margin-top: 80px; padding-bottom: 120px; gap: 10px; }
+    .avatar { width: 70px; height: 70px; }
     .top-spotlight { top: 50px; height: 50px; }
     .game-header { padding: 10px; font-size: 12px; }
 }
 
-/* 📱 ОГРАНИЧИТЕЛЬ ДЛЯ ПЛАНШЕТОВ И ПК */
 @media (min-width: 500px) {
-    body {
-        max-width: 480px; 
-        margin: 0 auto; 
-        border-left: 1px solid #333; 
-        border-right: 1px solid #333;
-        background: #000; 
-    }
-    
-    .controls-container, .bottom-nav, .top-spotlight, .vote-layer, .gift-shelf {
-        max-width: 480px;
-        left: 50%;
-        transform: translateX(-50%);
-        width: 100%;
-    }
-    
+    body { max-width: 480px; margin: 0 auto; border-left: 1px solid #333; border-right: 1px solid #333; background: #000; }
+    .controls-container, .bottom-nav, .top-spotlight, .vote-layer, .gift-shelf { max-width: 480px; left: 50%; transform: translateX(-50%); width: 100%; }
     .skip-btn { transform: translateX(-50%); } 
 }
