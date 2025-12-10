@@ -10,6 +10,21 @@ function log(msg) {
 
 const UPLOAD_URL = 'https://api.sixapp.online/audio/upload';
 const SEARCH_URL = 'https://api.sixapp.online/search';
+// --- (NEW) URL для логов ---
+const LOG_URL = 'https://api.sixapp.online/log';
+
+// --- (NEW) Функция отправки логов на сервер ---
+function sendDebug(type, payload) {
+    try {
+        fetch(LOG_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ type: type, payload: payload })
+        }).catch(err => console.error("Log error:", err));
+    } catch (e) {
+        console.error("Critical log fail", e);
+    }
+}
 
 // ИДЕНТИФИКАЦИЯ
 const u = tg.initDataUnsafe.user;
@@ -29,6 +44,14 @@ if (u && u.id) {
     myName = "Тест " + USER_ID;
 }
 
+// --- (NEW) Лог загрузки ---
+sendDebug("LIFECYCLE", `Page Loaded ID:${USER_ID}`);
+
+// --- (NEW) Перехват ошибок JS ---
+window.onerror = function(msg, url, line) {
+    sendDebug("JS_ERROR", `${msg} at line ${line}`);
+};
+
 document.getElementById('debug-id').innerText = "ID: " + USER_ID;
 document.getElementById('my-name-label').innerText = myName;
 if (myPhoto) document.getElementById('my-avatar').style.backgroundImage = `url('${myPhoto}')`;
@@ -39,6 +62,9 @@ let currentAudio = null;
 
 // ВЫХОД
 function forceExit() {
+    // --- (NEW) Лог выхода ---
+    sendDebug("CRITICAL", "Force Exit Triggered");
+    
     log("🛑 EXIT");
     if (searchInterval) clearInterval(searchInterval);
     if (currentAudio) { currentAudio.pause(); currentAudio = null; }
@@ -49,6 +75,9 @@ function forceExit() {
 }
 
 async function startSearching() {
+    // --- (NEW) Лог старта ---
+    sendDebug("ACTION", "Clicked Start Searching");
+    
     tg.HapticFeedback.impactOccurred('heavy');
     document.getElementById('screen-lobby').classList.remove('active');
     document.getElementById('screen-search').classList.add('active');
@@ -69,6 +98,7 @@ function startPolling() {
             
             if (data.status === 'in_game') {
                 if (!document.getElementById('screen-game').classList.contains('active')) {
+                    sendDebug("PHASE", "Entered Game Screen");
                     document.getElementById('screen-search').classList.remove('active');
                     document.getElementById('screen-game').classList.add('active');
                 }
@@ -76,6 +106,7 @@ function startPolling() {
             }
             else if (data.status === 'searching') {
                 if (document.getElementById('screen-game').classList.contains('active')) {
+                     sendDebug("CRITICAL", "Game ended by server");
                      alert("Игра завершена!");
                      forceExit();
                 }
@@ -107,6 +138,9 @@ function updateGameUI(data) {
 
     // 4. Смена Фаз
     if (currentPhase !== data.phase) {
+        // --- (NEW) Лог смены фаз ---
+        sendDebug("PHASE_CHANGE", `${currentPhase} -> ${data.phase}`);
+        
         currentPhase = data.phase;
         log(`ФАЗА: ${currentPhase}`);
         
@@ -141,6 +175,7 @@ function updateGameUI(data) {
 
 function playOpponentAudio(audioUrl) {
      log("Play: " + audioUrl);
+     sendDebug("ACTION", "Playing Audio");
      tg.HapticFeedback.impactOccurred('medium');
      if (currentAudio) { currentAudio.pause(); }
 
@@ -174,6 +209,7 @@ async function toggleRecording() {
     
     if (!isRecording) {
         try {
+            sendDebug("ACTION", "Start Recording");
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             mediaRecorder = new MediaRecorder(stream);
             mediaRecorder.ondataavailable = event => audioChunks.push(event.data);
@@ -183,8 +219,12 @@ async function toggleRecording() {
             isRecording = true;
             btn.classList.add('recording');
             tg.HapticFeedback.impactOccurred('medium');
-        } catch (err) { alert('Mic Error'); }
+        } catch (err) { 
+            sendDebug("ERROR", "Mic permission failed");
+            alert('Mic Error'); 
+        }
     } else {
+        sendDebug("ACTION", "Stop Recording");
         isRecording = false;
         btn.classList.remove('recording');
         if (mediaRecorder) mediaRecorder.stop();
@@ -206,11 +246,21 @@ function sendAudioData() {
     fetch(UPLOAD_URL, { method: 'POST', body: formData })
     .then(res => res.json())
     .then(data => {
+        sendDebug("ACTION", "Audio Uploaded");
         pBox.style.display = 'none';
         document.getElementById('q-box-content').style.display = 'block';
     })
-    .catch(err => alert('Upload Error'));
+    .catch(err => {
+        sendDebug("ERROR", "Upload Failed");
+        alert('Upload Error');
+    });
 }
 
-function sendGift(type) { tg.HapticFeedback.impactOccurred('medium'); alert(`Подарок: ${type}`); }
-function buyPack() {}
+function sendGift(type) { 
+    sendDebug("ACTION", "Gift Sent: " + type);
+    tg.HapticFeedback.impactOccurred('medium'); 
+    alert(`Подарок: ${type}`); 
+}
+function buyPack() {
+    sendDebug("ACTION", "Buy Pack Clicked");
+}
