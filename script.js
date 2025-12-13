@@ -3,10 +3,10 @@ tg.expand();
 tg.setHeaderColor('#0b0b14'); tg.setBackgroundColor('#0b0b14');
 
 function log(msg) {
-    console.log(msg); // Оставим только консоль для чистоты UI
+    console.log(msg);
 }
 
-const API_BASE = 'https://api.sixapp.online'; // Замени на свой хост, если локально
+const API_BASE = 'https://api.sixapp.online'; 
 const UPLOAD_URL = API_BASE + '/audio/upload';
 const SEARCH_URL = API_BASE + '/search';
 const LOG_URL = API_BASE + '/log';
@@ -40,7 +40,7 @@ if (u && u.id) {
 let searchInterval = null;
 let currentPhase = "";
 let currentAudio = null;
-let currentAudioUrl = null; // Чтобы знать, что сейчас играет
+let currentAudioId = null; // <--- FIX: ID вместо URL
 
 // UI Elements
 const screenLobby = document.getElementById('screen-lobby');
@@ -56,6 +56,7 @@ function forceExit() {
     screenSearch.classList.remove('active');
     screenLobby.classList.add('active');
     currentPhase = "";
+    currentAudioId = null;
 }
 
 async function startSearching() {
@@ -88,18 +89,15 @@ async function startSearching() {
 }
 
 function updateGame(data) {
-    // 1. Таймер и вопрос
     document.getElementById('game-timer').innerText = `00:${data.time_left < 10 ? '0'+data.time_left : data.time_left}`;
     document.getElementById('q-text-val').innerText = data.question;
     document.querySelector('.q-label').innerText = 'РАУНД ' + data.round;
 
-    // 2. Фаза
     if (currentPhase !== data.phase) {
         currentPhase = data.phase;
         handlePhaseChange(data.phase);
     }
 
-    // 3. Рендер игроков (6 слотов)
     renderPlayers(data.players, data.phase);
 }
 
@@ -114,36 +112,47 @@ function handlePhaseChange(phase) {
         playerBox.style.display = 'none';
         qBox.style.display = 'block';
         if (currentAudio) currentAudio.pause();
+        currentAudioId = null;
     } 
     else if (phase === 'listening') {
         controls.style.display = 'none';
         tg.HapticFeedback.notificationOccurred('success');
     }
     else if (phase === 'voting') {
-        // Пока просто выход, позже добавим модалку
         if (currentAudio) currentAudio.pause();
     }
 }
 
-// ГЕНЕРАЦИЯ СЕТКИ ИГРОКОВ
+// ГЕНЕРАЦИЯ СЕТКИ ИГРОКОВ (3 ЖЕНЩИНЫ СЛЕВА, 3 МУЖЧИНЫ СПРАВА)
 function renderPlayers(players, phase) {
-    // Очищаем и пересобираем, если нужно (можно оптимизировать через diff, но для 6 элементов ок)
     gridContainer.innerHTML = '';
 
-    players.forEach((p, index) => {
+    // 1. Сортировка по полу
+    const women = players.filter(p => p.gender === 'female');
+    const men = players.filter(p => p.gender === 'male');
+
+    // 2. Чередование для Grid (Ж, М, Ж, М, Ж, М)
+    // Grid заполняется построчно: Col1, Col2, Col1, Col2...
+    const sortedPlayers = [];
+    for (let i = 0; i < 3; i++) {
+        if (women[i]) sortedPlayers.push(women[i]);
+        if (men[i]) sortedPlayers.push(men[i]);
+    }
+
+    sortedPlayers.forEach((p) => {
         const isMe = p.id === USER_ID;
-        const isLeft = index < 3; // Первые 3 слева
+        const isFemale = p.gender === 'female';
         
         const card = document.createElement('div');
-        card.className = `player-card ${isLeft ? 'team-left' : 'team-right'}`;
-        if (currentAudioUrl === p.audio_url && currentAudioUrl !== null) {
+        // Если женщина - team-left, мужчина - team-right
+        card.className = `player-card ${isFemale ? 'team-left' : 'team-right'}`;
+        
+        // FIX: Сравниваем по ID, а не по URL
+        if (currentAudioId === p.id && currentAudioId !== null) {
             card.classList.add('playing');
         }
 
-        // Аватар
         const avatarUrl = p.photo || 'https://randomuser.me/api/portraits/lego/1.jpg';
-        
-        // Галочка (Status Check)
         const checkDisplay = (p.has_audio) ? 'flex' : 'none';
         
         card.innerHTML = `
@@ -153,23 +162,21 @@ function renderPlayers(players, phase) {
             <div class="name-tag" style="${isMe ? 'color:var(--neon-blue)' : ''}">${isMe ? 'ВЫ' : p.name}</div>
         `;
 
-        // Обработчик клика (Слушать)
         if (phase === 'listening' && p.audio_url && !isMe) {
-             card.onclick = () => playOpponentAudio(p.audio_url, p.name);
+             card.onclick = () => playOpponentAudio(p.audio_url, p.name, p.id);
         }
 
         gridContainer.appendChild(card);
     });
 }
 
-function playOpponentAudio(url, name) {
-    if (currentAudioUrl === url) {
-        // Пауза если нажали на того же
+function playOpponentAudio(url, name, id) {
+    if (currentAudioId === id) {
         stopAudio();
         return;
     }
 
-    sendDebug("PLAY", `Playing ${name}`);
+    sendDebug("PLAY", `Playing ${name} (${id})`);
     tg.HapticFeedback.impactOccurred('light');
 
     if (currentAudio) currentAudio.pause();
@@ -185,11 +192,12 @@ function playOpponentAudio(url, name) {
     `;
 
     currentAudio = new Audio(url);
-    currentAudioUrl = url;
+    currentAudioId = id; // Сохраняем ID текущего
     
-    // Перерисовка чтобы подсветить активного
-    // (В реальном проекте лучше менять класс через DOM, но searchPolling обновит через 1с)
+    // Мгновенное обновление UI (пока не пришел fetch)
     document.querySelectorAll('.player-card').forEach(el => el.classList.remove('playing'));
+    // Находим карточку по клику сложно, проще дождаться ререндера или найти по тексту, 
+    // но так как ререндер каждую секунду, визуально задержка минимальна.
     
     currentAudio.play().catch(e => console.error(e));
     currentAudio.onended = stopAudio;
@@ -197,11 +205,9 @@ function playOpponentAudio(url, name) {
 
 function stopAudio() {
     if (currentAudio) { currentAudio.pause(); currentAudio = null; }
-    currentAudioUrl = null;
+    currentAudioId = null;
     document.getElementById('player-box-content').style.display = 'none';
     document.getElementById('q-box-content').style.display = 'block';
-    
-    // Убираем подсветку
     document.querySelectorAll('.player-card').forEach(el => el.classList.remove('playing'));
 }
 
@@ -239,7 +245,6 @@ function uploadAudio() {
     formData.append('audio_file', blob);
     formData.append('user_id', USER_ID);
 
-    // Визуализация загрузки
     const pBox = document.getElementById('player-box-content');
     document.getElementById('q-box-content').style.display = 'none';
     pBox.style.display = 'flex';
