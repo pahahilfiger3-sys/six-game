@@ -143,7 +143,7 @@ body {
     box-shadow: 0 0 12px #39FF14, 0 0 2px #FFFFFF;
 }
 
-.blurred { filter: blur(8px) brightness(0.8); transition: filter 0.5s; opacity: 0.9; }
+.blurred { filter: blur(3px) brightness(0.9); transition: filter 0.5s; opacity: 0.9; }
 .unblurred { filter: blur(0px); opacity: 1; animation: none; }
 
 .controls-container {
@@ -258,4 +258,39 @@ body {
     body { max-width: 480px; margin: 0 auto; border-left: 1px solid #333; border-right: 1px solid #333; background: #000; }
     .controls-container, .bottom-nav, .top-spotlight, .vote-layer, .gift-shelf { max-width: 480px; left: 50%; transform: translateX(-50%); width: 100%; }
     .skip-btn { transform: translateX(-50%); } 
+}
+
+/* --- NEW STYLES --- */
+
+/* Индикатор готовности аудио */
+.status-check {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    width: 24px;
+    height: 24px;
+    background: #00ff88;
+    color: #000;
+    border-radius: 50%;
+    display: none; /* JS включит, когда есть аудио */
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    border: 2px solid #000;
+    z-index: 20;
+    box-shadow: 0 0 10px #00ff88;
+    animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* Активный игрок (которого слушаем) */
+.player-card.playing .avatar {
+    border-color: #ff0055;
+    box-shadow: 0 0 20px #ff0055, 0 0 10px #fff;
+    animation: pulse-audio 1s infinite;
+}
+
+@keyframes pulse-audio {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
 }
