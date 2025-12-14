@@ -74,7 +74,6 @@ body {
 .wave-visual { flex-grow: 1; height: 4px; background: #333; margin: 0 10px; border-radius: 2px; position: relative; }
 .wave-fill { height: 100%; width: 40%; background: white; border-radius: 2px; }
 
-/* Стиль для текстового ответа в спотлайте */
 .answer-text-display {
     flex-grow: 1; text-align: center;
     font-size: 13px; color: white; font-style: italic;
@@ -98,9 +97,44 @@ body {
     display: grid; 
     grid-template-columns: 1fr 1fr; 
     gap: 30px 90px; 
+    position: relative; /* For SVG positioning */
 }
 
-.player-card { display: flex; flex-direction: column; align-items: center; position: relative; transition: transform 0.1s; }
+/* SVG Layer */
+#connections-layer {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 0; /* Behind cards */
+}
+
+.line-normal {
+    stroke: var(--neon-blue);
+    stroke-width: 2;
+    opacity: 0.4;
+    stroke-linecap: round;
+}
+
+.line-match {
+    stroke: #00ff88;
+    stroke-width: 4;
+    opacity: 1;
+    stroke-linecap: round;
+    filter: drop-shadow(0 0 8px #00ff88);
+    stroke-dasharray: 10;
+    animation: dash 1s linear infinite;
+}
+
+@keyframes dash {
+    to { stroke-dashoffset: -20; }
+}
+
+.player-card { 
+    display: flex; flex-direction: column; align-items: center; 
+    position: relative; transition: transform 0.1s; 
+    z-index: 1; /* Above SVG */
+}
 .player-card:active { transform: scale(0.95); }
 
 .avatar { 
@@ -160,15 +194,14 @@ body {
 .gift-icon { width: 24px; height: 24px; filter: drop-shadow(0 2px 5px rgba(0,0,0,0.5)); }
 .gift-price { font-size: 11px; font-weight: 800; color: var(--gold); }
 
-/* --- ОБНОВЛЕННЫЙ MIC-WRAPPER --- */
 .mic-wrapper {
     position: relative; 
-    top: -15px; /* Чуть выше */
+    top: -15px; 
     display: flex; 
     flex-direction: column; 
     justify-content: center;
     align-items: center; 
-    gap: 10px; /* Расстояние между микрофоном и клавиатурой */
+    gap: 10px; 
 }
 
 .mic-btn {
@@ -201,7 +234,6 @@ body {
 }
 .keyboard-btn:active { transform: scale(0.9); }
 
-/* Класс для отключения кнопок в фазах кроме recording */
 .action-btn.disabled {
     opacity: 0.3;
     pointer-events: none;

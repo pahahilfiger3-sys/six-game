@@ -10,6 +10,7 @@ const API_BASE = 'https://api.sixapp.online';
 const UPLOAD_AUDIO_URL = API_BASE + '/audio/upload';
 const UPLOAD_TEXT_URL = API_BASE + '/text/upload';
 const SEARCH_URL = API_BASE + '/search';
+const VOTE_URL = API_BASE + '/vote';
 const LOG_URL = API_BASE + '/log';
 
 function sendDebug(type, payload) {
@@ -42,12 +43,15 @@ let searchInterval = null;
 let currentPhase = "";
 let currentAudio = null;
 let currentPlayerId = null;
+let hasVoted = false;
+let lastVotesMap = null;
 
 // UI Elements
 const screenLobby = document.getElementById('screen-lobby');
 const screenSearch = document.getElementById('screen-search');
 const screenGame = document.getElementById('screen-game');
-const gridContainer = document.querySelector('.table-grid');
+const gridContainer = document.getElementById('table-grid');
+const svgLayer = document.getElementById('connections-layer');
 
 function forceExit() {
     sendDebug("EXIT", "User quit");
@@ -58,6 +62,8 @@ function forceExit() {
     screenLobby.classList.add('active');
     currentPhase = "";
     currentPlayerId = null;
+    hasVoted = false;
+    svgLayer.innerHTML = '';
 }
 
 async function startSearching() {
@@ -100,6 +106,14 @@ function updateGame(data) {
     }
 
     renderPlayers(data.players, data.phase);
+
+    if (data.phase === 'results' && data.votes_map) {
+        // Only redraw if votes changed or first time
+        if (JSON.stringify(data.votes_map) !== JSON.stringify(lastVotesMap)) {
+            lastVotesMap = data.votes_map;
+            drawConnectionLines(data.votes_map, data.matches);
+        }
+    }
 }
 
 function handlePhaseChange(phase) {
@@ -107,6 +121,10 @@ function handlePhaseChange(phase) {
     const btns = document.querySelectorAll('.action-btn');
     const playerBox = document.getElementById('player-box-content');
     const qBox = document.getElementById('q-box-content');
+    
+    // Reset states
+    svgLayer.innerHTML = '';
+    lastVotesMap = null;
 
     if (phase === 'recording') {
         btns.forEach(b => b.classList.remove('disabled'));
@@ -115,19 +133,32 @@ function handlePhaseChange(phase) {
         if (currentAudio) currentAudio.pause();
         currentPlayerId = null;
     } 
+    else if (phase === 'voting') {
+        btns.forEach(b => b.classList.add('disabled'));
+        if (currentAudio) currentAudio.pause();
+        tg.HapticFeedback.notificationOccurred('warning');
+        hasVoted = false;
+    }
+    else if (phase === 'results') {
+        btns.forEach(b => b.classList.add('disabled'));
+        tg.HapticFeedback.notificationOccurred('success');
+    }
     else {
-        // Listening or Voting: disable mic/text input
+        // Listening
         btns.forEach(b => b.classList.add('disabled'));
         if (phase === 'listening') {
             tg.HapticFeedback.notificationOccurred('success');
-        } else if (phase === 'voting') {
-            if (currentAudio) currentAudio.pause();
         }
     }
 }
 
 function renderPlayers(players, phase) {
-    gridContainer.innerHTML = '';
+    // Keep existing cards if possible to avoid flicker, but for simplicity we rebuild
+    // To optimize: check if innerHTML needs update. For now, rebuild is safer for state.
+    
+    // Clear only cards, keep SVG
+    const existingCards = document.querySelectorAll('.player-card');
+    existingCards.forEach(c => c.remove());
 
     const women = players.filter(p => p.gender === 'female');
     const men = players.filter(p => p.gender === 'male');
@@ -144,13 +175,13 @@ function renderPlayers(players, phase) {
         
         const card = document.createElement('div');
         card.className = `player-card ${isFemale ? 'team-left' : 'team-right'}`;
+        card.id = `player-${p.id}`; // ID for SVG positioning
         
         if (currentPlayerId === p.id && currentPlayerId !== null) {
             card.classList.add('playing');
         }
 
         const avatarUrl = p.photo || 'https://randomuser.me/api/portraits/lego/1.jpg';
-        // Есть ли ответ (аудио или текст)
         const checkDisplay = (p.has_answer) ? 'flex' : 'none';
         
         card.innerHTML = `
@@ -160,13 +191,39 @@ function renderPlayers(players, phase) {
             <div class="name-tag" style="${isMe ? 'color:var(--neon-blue)' : ''}">${isMe ? 'ВЫ' : p.name}</div>
         `;
 
-        // Клик только в фазе listening, если есть ответ и это не мы
+        // Click Logic
         if (phase === 'listening' && p.has_answer && !isMe) {
              card.onclick = () => activateSpotlight(p);
+        } else if (phase === 'voting' && !isMe) {
+             card.onclick = () => castVote(p);
+        } else if (phase === 'results' && !isMe) {
+             card.onclick = () => {
+                 if(confirm("Купить контакт этого игрока за 50 монет?")) {
+                     alert("Функция в разработке!");
+                 }
+             };
         }
 
         gridContainer.appendChild(card);
     });
+}
+
+async function castVote(player) {
+    if (hasVoted) return;
+    if (!confirm(`Голосовать за ${player.name}?`)) return;
+
+    hasVoted = true;
+    try {
+        await fetch(VOTE_URL, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ user_id: USER_ID, target_id: player.id })
+        });
+        tg.HapticFeedback.notificationOccurred('success');
+        // Visual feedback
+        const card = document.getElementById(`player-${player.id}`);
+        if(card) card.style.opacity = "0.5";
+    } catch(e) { console.error(e); hasVoted = false; }
 }
 
 function activateSpotlight(player) {
@@ -180,16 +237,12 @@ function activateSpotlight(player) {
 
     if (currentAudio) currentAudio.pause();
 
-    // UI Spotlight update
     document.getElementById('q-box-content').style.display = 'none';
     const pBox = document.getElementById('player-box-content');
     pBox.style.display = 'flex';
-    
-    // Clear previous content
     pBox.innerHTML = '';
 
     currentPlayerId = player.id;
-    // Удаляем visual playing class у других
     document.querySelectorAll('.player-card').forEach(el => el.classList.remove('playing'));
 
     if (player.answer_type === 'audio') {
@@ -207,7 +260,6 @@ function activateSpotlight(player) {
             <div style="font-size:10px; color:var(--neon-pink); white-space:nowrap; margin-right:5px;">${player.name}:</div>
             <div class="answer-text-display">"${player.answer_content}"</div>
         `;
-        // Текст показываем, звука нет, но "статус активности" висит, пока не кликнут другого
     }
 }
 
@@ -219,9 +271,59 @@ function stopPlayback() {
     document.querySelectorAll('.player-card').forEach(el => el.classList.remove('playing'));
 }
 
+// --- VISUALS: ARROWS ---
+function drawConnectionLines(votesMap, matches) {
+    svgLayer.innerHTML = ''; // Clear old lines
+    const containerRect = gridContainer.getBoundingClientRect();
+
+    // Helper to check if a pair is a match
+    const isMatch = (id1, id2) => {
+        if (!matches) return false;
+        return matches.some(m => (m[0] == id1 && m[1] == id2) || (m[0] == id2 && m[1] == id1));
+    };
+
+    for (const [voterId, targetId] of Object.entries(votesMap)) {
+        const fromEl = document.getElementById(`player-${voterId}`);
+        const toEl = document.getElementById(`player-${targetId}`);
+
+        if (fromEl && toEl) {
+            const fromRect = fromEl.querySelector('.avatar').getBoundingClientRect();
+            const toRect = toEl.querySelector('.avatar').getBoundingClientRect();
+
+            // Calculate centers relative to the container
+            const x1 = fromRect.left + fromRect.width / 2 - containerRect.left;
+            const y1 = fromRect.top + fromRect.height / 2 - containerRect.top;
+            const x2 = toRect.left + toRect.width / 2 - containerRect.left;
+            const y2 = toRect.top + toRect.height / 2 - containerRect.top;
+
+            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line.setAttribute('x1', x1);
+            line.setAttribute('y1', y1);
+            line.setAttribute('x2', x2);
+            line.setAttribute('y2', y2);
+
+            if (isMatch(voterId, targetId)) {
+                line.setAttribute('class', 'line-match');
+            } else {
+                line.setAttribute('class', 'line-normal');
+            }
+
+            svgLayer.appendChild(line);
+        }
+    }
+}
+
+// Redraw on resize
+window.addEventListener('resize', () => {
+    if (currentPhase === 'results' && lastVotesMap) {
+        // Need matches data here, but it's not stored globally. 
+        // Ideally, store full last data object. For now, lines might disappear until next poll.
+        // Better: fetch will redraw in <1s.
+    }
+});
+
 // --- INPUT LOGIC ---
 
-// 1. TEXT
 async function sendTextAnswer() {
     const text = prompt("Ваш ответ:", "");
     if (!text || text.trim() === "") return;
@@ -249,14 +351,12 @@ async function sendTextAnswer() {
     document.getElementById('q-box-content').style.display = 'block';
 }
 
-// 2. AUDIO
 let isRecording = false;
 let mediaRecorder;
 let audioChunks = [];
 
 async function toggleRecording() {
     const btn = document.getElementById('mic-btn');
-    // Если кнопка заблокирована (класс disabled), ничего не делаем
     if (btn.classList.contains('disabled')) return;
     
     if (!isRecording) {
@@ -306,4 +406,13 @@ function uploadAudio() {
         pBox.style.display = 'none';
         document.getElementById('q-box-content').style.display = 'block';
     });
+}
+
+// --- GIFTS ---
+function sendGift(type) {
+    // Пока просто визуальный эффект или алерт
+    console.log("Gift sent:", type);
+    tg.HapticFeedback.notificationOccurred('success');
+    // В будущем тут будет fetch запрос на списание монет
+    alert(`Подарок ${type} отправлен! (Списано монет: 10)`);
 }
