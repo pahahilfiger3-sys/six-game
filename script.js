@@ -7,7 +7,8 @@ function log(msg) {
 }
 
 const API_BASE = 'https://api.sixapp.online'; 
-const UPLOAD_URL = API_BASE + '/audio/upload';
+const UPLOAD_AUDIO_URL = API_BASE + '/audio/upload';
+const UPLOAD_TEXT_URL = API_BASE + '/text/upload';
 const SEARCH_URL = API_BASE + '/search';
 const LOG_URL = API_BASE + '/log';
 
@@ -40,7 +41,7 @@ if (u && u.id) {
 let searchInterval = null;
 let currentPhase = "";
 let currentAudio = null;
-let currentAudioId = null; // <--- FIX: ID вместо URL
+let currentPlayerId = null;
 
 // UI Elements
 const screenLobby = document.getElementById('screen-lobby');
@@ -56,7 +57,7 @@ function forceExit() {
     screenSearch.classList.remove('active');
     screenLobby.classList.add('active');
     currentPhase = "";
-    currentAudioId = null;
+    currentPlayerId = null;
 }
 
 async function startSearching() {
@@ -103,36 +104,34 @@ function updateGame(data) {
 
 function handlePhaseChange(phase) {
     sendDebug("PHASE", phase);
-    const controls = document.getElementById('controls');
+    const btns = document.querySelectorAll('.action-btn');
     const playerBox = document.getElementById('player-box-content');
     const qBox = document.getElementById('q-box-content');
 
     if (phase === 'recording') {
-        controls.style.display = 'flex';
+        btns.forEach(b => b.classList.remove('disabled'));
         playerBox.style.display = 'none';
         qBox.style.display = 'block';
         if (currentAudio) currentAudio.pause();
-        currentAudioId = null;
+        currentPlayerId = null;
     } 
-    else if (phase === 'listening') {
-        controls.style.display = 'none';
-        tg.HapticFeedback.notificationOccurred('success');
-    }
-    else if (phase === 'voting') {
-        if (currentAudio) currentAudio.pause();
+    else {
+        // Listening or Voting: disable mic/text input
+        btns.forEach(b => b.classList.add('disabled'));
+        if (phase === 'listening') {
+            tg.HapticFeedback.notificationOccurred('success');
+        } else if (phase === 'voting') {
+            if (currentAudio) currentAudio.pause();
+        }
     }
 }
 
-// ГЕНЕРАЦИЯ СЕТКИ ИГРОКОВ (3 ЖЕНЩИНЫ СЛЕВА, 3 МУЖЧИНЫ СПРАВА)
 function renderPlayers(players, phase) {
     gridContainer.innerHTML = '';
 
-    // 1. Сортировка по полу
     const women = players.filter(p => p.gender === 'female');
     const men = players.filter(p => p.gender === 'male');
 
-    // 2. Чередование для Grid (Ж, М, Ж, М, Ж, М)
-    // Grid заполняется построчно: Col1, Col2, Col1, Col2...
     const sortedPlayers = [];
     for (let i = 0; i < 3; i++) {
         if (women[i]) sortedPlayers.push(women[i]);
@@ -144,16 +143,15 @@ function renderPlayers(players, phase) {
         const isFemale = p.gender === 'female';
         
         const card = document.createElement('div');
-        // Если женщина - team-left, мужчина - team-right
         card.className = `player-card ${isFemale ? 'team-left' : 'team-right'}`;
         
-        // FIX: Сравниваем по ID, а не по URL
-        if (currentAudioId === p.id && currentAudioId !== null) {
+        if (currentPlayerId === p.id && currentPlayerId !== null) {
             card.classList.add('playing');
         }
 
         const avatarUrl = p.photo || 'https://randomuser.me/api/portraits/lego/1.jpg';
-        const checkDisplay = (p.has_audio) ? 'flex' : 'none';
+        // Есть ли ответ (аудио или текст)
+        const checkDisplay = (p.has_answer) ? 'flex' : 'none';
         
         card.innerHTML = `
             <div class="avatar" style="background-image:url('${avatarUrl}')">
@@ -162,21 +160,22 @@ function renderPlayers(players, phase) {
             <div class="name-tag" style="${isMe ? 'color:var(--neon-blue)' : ''}">${isMe ? 'ВЫ' : p.name}</div>
         `;
 
-        if (phase === 'listening' && p.audio_url && !isMe) {
-             card.onclick = () => playOpponentAudio(p.audio_url, p.name, p.id);
+        // Клик только в фазе listening, если есть ответ и это не мы
+        if (phase === 'listening' && p.has_answer && !isMe) {
+             card.onclick = () => activateSpotlight(p);
         }
 
         gridContainer.appendChild(card);
     });
 }
 
-function playOpponentAudio(url, name, id) {
-    if (currentAudioId === id) {
-        stopAudio();
+function activateSpotlight(player) {
+    if (currentPlayerId === player.id) {
+        stopPlayback();
         return;
     }
 
-    sendDebug("PLAY", `Playing ${name} (${id})`);
+    sendDebug("SPOTLIGHT", `${player.name} (${player.answer_type})`);
     tg.HapticFeedback.impactOccurred('light');
 
     if (currentAudio) currentAudio.pause();
@@ -185,39 +184,80 @@ function playOpponentAudio(url, name, id) {
     document.getElementById('q-box-content').style.display = 'none';
     const pBox = document.getElementById('player-box-content');
     pBox.style.display = 'flex';
-    pBox.innerHTML = `
-        <div class="play-btn" onclick="stopAudio()">⏸</div>
-        <div style="font-size:10px; color:var(--neon-pink); margin-right:5px; white-space:nowrap;">${name}</div>
-        <div class="wave-visual"><div class="wave-fill" style="animation: fillWave 10s linear forwards;"></div></div>
-    `;
+    
+    // Clear previous content
+    pBox.innerHTML = '';
 
-    currentAudio = new Audio(url);
-    currentAudioId = id; // Сохраняем ID текущего
-    
-    // Мгновенное обновление UI (пока не пришел fetch)
+    currentPlayerId = player.id;
+    // Удаляем visual playing class у других
     document.querySelectorAll('.player-card').forEach(el => el.classList.remove('playing'));
-    // Находим карточку по клику сложно, проще дождаться ререндера или найти по тексту, 
-    // но так как ререндер каждую секунду, визуально задержка минимальна.
-    
-    currentAudio.play().catch(e => console.error(e));
-    currentAudio.onended = stopAudio;
+
+    if (player.answer_type === 'audio') {
+        pBox.innerHTML = `
+            <div class="play-btn" onclick="stopPlayback()">⏸</div>
+            <div style="font-size:10px; color:var(--neon-pink); margin-right:5px; white-space:nowrap;">${player.name}</div>
+            <div class="wave-visual"><div class="wave-fill" style="animation: fillWave 10s linear forwards;"></div></div>
+        `;
+        currentAudio = new Audio(player.answer_content);
+        currentAudio.play().catch(e => console.error(e));
+        currentAudio.onended = stopPlayback;
+    } 
+    else if (player.answer_type === 'text') {
+        pBox.innerHTML = `
+            <div style="font-size:10px; color:var(--neon-pink); white-space:nowrap; margin-right:5px;">${player.name}:</div>
+            <div class="answer-text-display">"${player.answer_content}"</div>
+        `;
+        // Текст показываем, звука нет, но "статус активности" висит, пока не кликнут другого
+    }
 }
 
-function stopAudio() {
+function stopPlayback() {
     if (currentAudio) { currentAudio.pause(); currentAudio = null; }
-    currentAudioId = null;
+    currentPlayerId = null;
     document.getElementById('player-box-content').style.display = 'none';
     document.getElementById('q-box-content').style.display = 'block';
     document.querySelectorAll('.player-card').forEach(el => el.classList.remove('playing'));
 }
 
-// --- RECORDING LOGIC ---
+// --- INPUT LOGIC ---
+
+// 1. TEXT
+async function sendTextAnswer() {
+    const text = prompt("Ваш ответ:", "");
+    if (!text || text.trim() === "") return;
+
+    const pBox = document.getElementById('player-box-content');
+    document.getElementById('q-box-content').style.display = 'none';
+    pBox.style.display = 'flex';
+    pBox.innerHTML = `<div style="color:#00ff88; font-size:12px;">ОТПРАВКА...</div>`;
+
+    try {
+        const res = await fetch(UPLOAD_TEXT_URL, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ user_id: USER_ID, text: text })
+        });
+        const d = await res.json();
+        if(d.status === 'success') {
+            tg.HapticFeedback.notificationOccurred('success');
+        } else {
+            alert('Ошибка отправки');
+        }
+    } catch(e) { console.error(e); }
+    
+    pBox.style.display = 'none';
+    document.getElementById('q-box-content').style.display = 'block';
+}
+
+// 2. AUDIO
 let isRecording = false;
 let mediaRecorder;
 let audioChunks = [];
 
 async function toggleRecording() {
     const btn = document.getElementById('mic-btn');
+    // Если кнопка заблокирована (класс disabled), ничего не делаем
+    if (btn.classList.contains('disabled')) return;
     
     if (!isRecording) {
         try {
@@ -250,7 +290,7 @@ function uploadAudio() {
     pBox.style.display = 'flex';
     pBox.innerHTML = `<div style="color:#00ff88; font-size:12px;">ОТПРАВКА...</div>`;
 
-    fetch(UPLOAD_URL, { method: 'POST', body: formData })
+    fetch(UPLOAD_AUDIO_URL, { method: 'POST', body: formData })
     .then(r => r.json())
     .then(d => {
         if(d.status === 'success') {
