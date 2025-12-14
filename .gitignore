@@ -5,3 +5,4 @@ __pycache__/
 sftp.json
 PROJECT_CONTEXT.md
 .DS_Store
+.env
