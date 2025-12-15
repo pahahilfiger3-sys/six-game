@@ -1,7 +1,7 @@
 let tg = window.Telegram.WebApp;
 tg.expand();
-tg.setHeaderColor('#0b0b14');
-tg.setBackgroundColor('#0b0b14');
+tg.setHeaderColor('#05050a');
+tg.setBackgroundColor('#05050a');
 
 const API_BASE = 'https://api.sixapp.online'; 
 const UPLOAD_AUDIO_URL = API_BASE + '/audio/upload';
@@ -144,11 +144,6 @@ function handlePhaseChange(phase) {
 
 function renderPlayers(players, phase) {
     const existingCards = document.querySelectorAll('.player-card');
-    // Simple diffing to avoid re-rendering lottie animations if player exists
-    // But for simplicity in this version, we re-render if count changes or full refresh needed
-    // To keep Lottie playing, we should be careful. 
-    // However, standard render replaces innerHTML. 
-    // Let's clear and rebuild for safety in this architecture.
     existingCards.forEach(c => c.remove());
 
     const women = players.filter(p => p.gender === 'female');
@@ -163,6 +158,7 @@ function renderPlayers(players, phase) {
     sorted.forEach(p => {
         const isMe = p.id === USER_ID;
         const card = document.createElement('div');
+        // No team-left/right classes needed for styling anymore, but kept for logic if needed
         card.className = `player-card ${p.gender === 'female' ? 'team-left' : 'team-right'}`;
         card.id = `player-${p.id}`;
         
@@ -220,7 +216,7 @@ function closeProfileModal() {
     profileModal.classList.remove('active');
 }
 
-// --- GIFTS & LOTTIE ---
+// --- GIFTS & VFX ---
 
 function selectGift(type) {
     selectedGiftType = (selectedGiftType === type) ? null : type;
@@ -232,31 +228,6 @@ function updateGiftUI() {
     document.querySelectorAll('.gift-btn').forEach(btn => {
         btn.classList.toggle('selected', selectedGiftType && btn.getAttribute('onclick').includes(selectedGiftType));
     });
-}
-
-function playLottieEffect(cardElement, type) {
-    const urls = {
-        'fire': 'https://lottie.host/56a5960f-240a-4b9e-b91d-239611681283/2Y5v6s7k7j.json',
-        'ice': 'https://lottie.host/9338f0fa-3d66-4158-bda2-5c824c629853/yY8j5Cj2jF.json',
-        'drink': 'https://lottie.host/0f3c051a-5f04-4533-87f5-257852e9352e/Jj5v9x5y5z.json',
-        'spy': 'https://lottie.host/43d83769-3a3f-4e08-943b-283021980312/5j2x9c5v3b.json'
-    };
-
-    if (!urls[type]) return;
-
-    const player = document.createElement('dotlottie-player');
-    player.setAttribute('src', urls[type]);
-    player.setAttribute('autoplay', '');
-    player.setAttribute('speed', '1');
-    player.setAttribute('mode', 'normal');
-    player.classList.add('lottie-overlay');
-
-    cardElement.appendChild(player);
-
-    // Remove after 3 seconds
-    setTimeout(() => {
-        player.remove();
-    }, 3000);
 }
 
 async function sendGiftToPlayer(player, type) {
@@ -272,9 +243,14 @@ async function sendGiftToPlayer(player, type) {
             tg.HapticFeedback.notificationOccurred('success');
             document.getElementById('user-balance').innerText = data.new_balance + ' 🪙';
             
+            // CSS Animation Trigger
             const card = document.getElementById(`player-${player.id}`);
             if (card) {
-                playLottieEffect(card, type);
+                const fxClass = `fx-${type}`;
+                card.classList.add(fxClass);
+                setTimeout(() => {
+                    card.classList.remove(fxClass);
+                }, 3000);
             }
 
             // SPY Logic
@@ -377,7 +353,6 @@ function drawConnectionLines(votes, matches) {
     const rect = gridContainer.getBoundingClientRect();
     
     // Calculate dynamic offset based on avatar size (approx half width + margin)
-    // Since avatars are responsive, we estimate or use a fixed safe offset
     const OFFSET = 60; 
 
     for (const [voter, target] of Object.entries(votes)) {
