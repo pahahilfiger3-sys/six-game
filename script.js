@@ -47,6 +47,7 @@ let currentAudio = null;
 let currentPlayerId = null;
 let hasVoted = false;
 let lastVotesMap = null;
+let selectedGiftType = null;
 
 // UI Elements
 const screenLobby = document.getElementById('screen-lobby');
@@ -54,6 +55,8 @@ const screenSearch = document.getElementById('screen-search');
 const screenGame = document.getElementById('screen-game');
 const gridContainer = document.getElementById('table-grid');
 const svgLayer = document.getElementById('connections-layer');
+const profileModal = document.getElementById('profile-modal');
+const profileImg = document.getElementById('profile-large-img');
 
 function forceExit() {
     sendDebug("EXIT", "User quit");
@@ -65,6 +68,8 @@ function forceExit() {
     currentPhase = "";
     currentPlayerId = null;
     hasVoted = false;
+    selectedGiftType = null;
+    updateGiftUI();
     svgLayer.innerHTML = '<defs><marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#00f3ff" /></marker><marker id="arrowhead-match" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#00ff88" /></marker></defs>';
 }
 
@@ -129,7 +134,6 @@ function handlePhaseChange(phase) {
     const qBox = document.getElementById('q-box-content');
     
     // Reset states
-    // Keep defs in SVG
     svgLayer.innerHTML = '<defs><marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#00f3ff" /></marker><marker id="arrowhead-match" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#00ff88" /></marker></defs>';
     lastVotesMap = null;
 
@@ -201,29 +205,35 @@ function renderPlayers(players, phase) {
         `;
 
         // Click Logic
-        if (phase === 'listening' && p.has_answer && !isMe) {
-             card.onclick = () => activateSpotlight(p);
-        } else if (phase === 'voting' && !isMe) {
-             card.onclick = () => castVote(p);
-        } else if (phase === 'results' && !isMe) {
-             card.onclick = () => handleResultClick(p);
-        }
+        card.onclick = () => {
+            if (isMe) return;
+
+            if (selectedGiftType) {
+                sendGiftToPlayer(p, selectedGiftType);
+                return;
+            }
+
+            if (phase === 'listening' && p.has_answer) {
+                 activateSpotlight(p);
+            } else if (phase === 'voting') {
+                 castVote(p);
+            } else if (phase === 'results') {
+                 handleResultClick(p);
+            }
+        };
 
         gridContainer.appendChild(card);
     });
 }
 
 function handleResultClick(player) {
-    // First click: Show answer (if available)
     if (currentPlayerId !== player.id) {
         if (player.has_answer) {
             activateSpotlight(player);
         } else {
-            // If no answer to show, go straight to buy prompt
             promptBuy(player);
         }
     } else {
-        // Second click (already spotlighted): Prompt buy
         promptBuy(player);
     }
 }
@@ -237,7 +247,6 @@ function promptBuy(player) {
 async function castVote(player) {
     if (hasVoted) return;
     
-    // Gender check
     if (player.gender === myGender) {
         alert("Выбирать можно только противоположный пол!");
         return;
@@ -253,7 +262,6 @@ async function castVote(player) {
             body: JSON.stringify({ user_id: USER_ID, target_id: player.id })
         });
         tg.HapticFeedback.notificationOccurred('success');
-        // Visual feedback
         const card = document.getElementById(`player-${player.id}`);
         if(card) card.style.opacity = "0.5";
     } catch(e) { console.error(e); hasVoted = false; }
@@ -306,13 +314,11 @@ function stopPlayback() {
 
 // --- VISUALS: ARROWS ---
 function drawConnectionLines(votesMap, matches) {
-    // Reset SVG but keep defs
     svgLayer.innerHTML = '<defs><marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#00f3ff" /></marker><marker id="arrowhead-match" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#00ff88" /></marker></defs>';
     
     const containerRect = gridContainer.getBoundingClientRect();
-    const AVATAR_RADIUS = 55; // Approx radius + border + gap
+    const AVATAR_RADIUS = 55; 
 
-    // Helper to check if a pair is a match
     const isMatch = (id1, id2) => {
         if (!matches) return false;
         return matches.some(m => (m[0] == id1 && m[1] == id2) || (m[0] == id2 && m[1] == id1));
@@ -326,21 +332,15 @@ function drawConnectionLines(votesMap, matches) {
             const fromRect = fromEl.querySelector('.avatar').getBoundingClientRect();
             const toRect = toEl.querySelector('.avatar').getBoundingClientRect();
 
-            // Centers relative to container
             const cx1 = fromRect.left + fromRect.width / 2 - containerRect.left;
             const cy1 = fromRect.top + fromRect.height / 2 - containerRect.top;
             const cx2 = toRect.left + toRect.width / 2 - containerRect.left;
             const cy2 = toRect.top + toRect.height / 2 - containerRect.top;
 
-            // Calculate angle
             const angle = Math.atan2(cy2 - cy1, cx2 - cx1);
 
-            // Calculate start and end points on the edge of the circle
-            // Start point (optional, can start from center, but looks better from edge)
             const x1 = cx1 + AVATAR_RADIUS * Math.cos(angle);
             const y1 = cy1 + AVATAR_RADIUS * Math.sin(angle);
-
-            // End point (arrow tip touches target circle)
             const x2 = cx2 - AVATAR_RADIUS * Math.cos(angle);
             const y2 = cy2 - AVATAR_RADIUS * Math.sin(angle);
 
@@ -363,10 +363,9 @@ function drawConnectionLines(votesMap, matches) {
     }
 }
 
-// Redraw on resize
 window.addEventListener('resize', () => {
     if (currentPhase === 'results' && lastVotesMap) {
-        // Ideally we should store matches too, but for now just wait for next poll
+        // Wait for next poll
     }
 });
 
@@ -456,23 +455,54 @@ function uploadAudio() {
     });
 }
 
-// --- GIFTS ---
-async function sendGift(type) {
-    if (!confirm(`Отправить подарок ${type}?`)) return;
+// --- GIFTS & EFFECTS ---
+
+function selectGift(type) {
+    if (selectedGiftType === type) {
+        selectedGiftType = null;
+    } else {
+        selectedGiftType = type;
+        tg.HapticFeedback.impactOccurred('light');
+    }
+    updateGiftUI();
+}
+
+function updateGiftUI() {
+    document.querySelectorAll('.gift-btn').forEach(btn => {
+        btn.classList.remove('selected');
+        if (selectedGiftType && btn.getAttribute('onclick').includes(selectedGiftType)) {
+            btn.classList.add('selected');
+        }
+    });
+}
+
+async function sendGiftToPlayer(player, type) {
+    const prices = {'ice': 10, 'fire': 25, 'drink': 50, 'spy': 100};
+    const price = prices[type];
+
+    if (!confirm(`Отправить ${type} игроку ${player.name} за ${price} монет?`)) {
+        selectedGiftType = null;
+        updateGiftUI();
+        return;
+    }
 
     try {
         const res = await fetch(GIFT_URL, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ user_id: USER_ID, gift_type: type })
+            body: JSON.stringify({ user_id: USER_ID, target_id: player.id, gift_type: type })
         });
         const data = await res.json();
         
         if (data.status === 'success') {
             tg.HapticFeedback.notificationOccurred('success');
-            // Update balance in lobby (will be visible when user exits)
             document.getElementById('user-balance').innerText = data.new_balance + ' 🪙';
-            alert(`Подарок отправлен! Остаток: ${data.new_balance} 🪙`);
+            
+            playEffect(player.id, type);
+            
+            if (type === 'spy') {
+                setTimeout(() => openProfileModal(player.photo), 1000);
+            }
         } else {
             tg.HapticFeedback.notificationOccurred('error');
             alert(data.msg || "Ошибка отправки");
@@ -481,4 +511,30 @@ async function sendGift(type) {
         console.error(e);
         alert("Ошибка сети");
     }
+    
+    selectedGiftType = null;
+    updateGiftUI();
+}
+
+function playEffect(playerId, type) {
+    const card = document.getElementById(`player-${playerId}`);
+    if (!card) return;
+    
+    const fxClass = `fx-${type}`;
+    card.classList.add(fxClass);
+    
+    setTimeout(() => {
+        card.classList.remove(fxClass);
+    }, 2000);
+}
+
+function openProfileModal(url) {
+    if (!url) return;
+    profileImg.src = url;
+    profileModal.classList.add('active');
+    tg.HapticFeedback.impactOccurred('heavy');
+}
+
+function closeProfileModal() {
+    profileModal.classList.remove('active');
 }

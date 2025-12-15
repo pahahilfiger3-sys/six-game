@@ -57,11 +57,17 @@ body {
 #game-timer { color: white; font-size: 18px; text-shadow: 0 0 10px red; }
 
 .nav-exit {
-    color: #ff4444; font-weight: 800; cursor: pointer; font-size: 12px; letter-spacing: 1px;
-    border: 1px solid rgba(255, 68, 68, 0.3); padding: 5px 10px; border-radius: 8px;
-    background: rgba(255, 68, 68, 0.1); transition: all 0.2s;
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: rgba(255, 68, 68, 0.1);
+    border: 1px solid rgba(255, 68, 68, 0.5);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 0 10px rgba(255, 68, 68, 0.2);
+    transition: all 0.2s;
 }
-.nav-exit:active { transform: scale(0.95); opacity: 0.8; background: rgba(255, 68, 68, 0.2); }
+.nav-exit svg { width: 16px; height: 16px; fill: #ff4444; }
+.nav-exit:active { transform: scale(0.9); background: rgba(255, 68, 68, 0.3); box-shadow: 0 0 15px #ff4444; }
 
 .top-spotlight {
     position: absolute; top: 60px; left: 50%; transform: translateX(-50%);
@@ -192,11 +198,17 @@ body {
     background: rgba(255,255,255,0.03); 
     padding: 8px 12px; border-radius: 18px;
     border: 1px solid transparent;
-    transition: transform 0.1s; cursor: pointer;
+    transition: transform 0.1s, border 0.2s, background 0.2s; cursor: pointer;
     width: 90px;
     justify-content: space-between;
 }
 .gift-btn:active { transform: scale(0.95); background: rgba(255,255,255,0.1); }
+.gift-btn.selected {
+    border: 1px solid var(--neon-blue);
+    background: rgba(0, 243, 255, 0.1);
+    transform: scale(1.05);
+    box-shadow: 0 0 15px rgba(0, 243, 255, 0.3);
+}
 
 .gift-icon { width: 24px; height: 24px; filter: drop-shadow(0 2px 5px rgba(0,0,0,0.5)); }
 .gift-price { font-size: 11px; font-weight: 800; color: var(--gold); }
@@ -260,7 +272,73 @@ body {
     cursor: not-allowed;
 }
 
+/* --- ANIMATIONS & EFFECTS --- */
 @keyframes spin { to { transform: rotate(360deg); } }
+
+@keyframes shake {
+    0% { transform: translate(1px, 1px) rotate(0deg); }
+    10% { transform: translate(-1px, -2px) rotate(-1deg); }
+    20% { transform: translate(-3px, 0px) rotate(1deg); }
+    30% { transform: translate(3px, 2px) rotate(0deg); }
+    40% { transform: translate(1px, -1px) rotate(1deg); }
+    50% { transform: translate(-1px, 2px) rotate(-1deg); }
+    60% { transform: translate(-3px, 1px) rotate(0deg); }
+    70% { transform: translate(3px, 1px) rotate(-1deg); }
+    80% { transform: translate(-1px, -1px) rotate(1deg); }
+    90% { transform: translate(1px, 2px) rotate(0deg); }
+    100% { transform: translate(1px, -2px) rotate(-1deg); }
+}
+
+@keyframes pulsate-red {
+    0% { box-shadow: 0 0 0 0 rgba(255, 0, 0, 0.7); transform: scale(1); }
+    50% { box-shadow: 0 0 50px 20px rgba(255, 0, 0, 0); transform: scale(1.1); }
+    100% { box-shadow: 0 0 0 0 rgba(255, 0, 0, 0); transform: scale(1); }
+}
+
+@keyframes drunk-blur {
+    0% { filter: blur(0px) hue-rotate(0deg); }
+    50% { filter: blur(4px) hue-rotate(90deg); }
+    100% { filter: blur(0px) hue-rotate(0deg); }
+}
+
+@keyframes glitch-anim {
+    0% { clip-path: inset(40% 0 61% 0); filter: contrast(200%); }
+    20% { clip-path: inset(92% 0 1% 0); }
+    40% { clip-path: inset(43% 0 1% 0); filter: contrast(100%); }
+    60% { clip-path: inset(25% 0 58% 0); }
+    80% { clip-path: inset(54% 0 7% 0); filter: contrast(200%); }
+    100% { clip-path: inset(58% 0 43% 0); }
+}
+
+.fx-ice .avatar { animation: shake 0.5s infinite; filter: hue-rotate(180deg) brightness(1.5); }
+.fx-fire .avatar { animation: pulsate-red 0.5s infinite; border-color: red !important; }
+.fx-drink .avatar { animation: drunk-blur 2s infinite; }
+.fx-spy .avatar { animation: glitch-anim 0.3s infinite linear; }
+
+/* --- MODAL --- */
+#profile-modal {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(10px);
+    z-index: 10000;
+    display: none;
+    flex-direction: column;
+    align-items: center; justify-content: center;
+}
+#profile-modal.active { display: flex; animation: popIn 0.3s ease; }
+
+.modal-close {
+    position: absolute; top: 20px; right: 20px;
+    font-size: 30px; color: white; cursor: pointer;
+    text-shadow: 0 0 10px red;
+}
+
+#profile-large-img {
+    max-width: 90%; max-height: 70%;
+    border: 2px solid var(--neon-blue);
+    box-shadow: 0 0 40px var(--neon-blue);
+    border-radius: 10px;
+}
 
 @media (max-height: 700px) {
     .controls-container { height: 100px; bottom: 10px; }
