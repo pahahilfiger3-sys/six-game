@@ -144,6 +144,11 @@ function handlePhaseChange(phase) {
 
 function renderPlayers(players, phase) {
     const existingCards = document.querySelectorAll('.player-card');
+    // Simple diffing to avoid re-rendering lottie animations if player exists
+    // But for simplicity in this version, we re-render if count changes or full refresh needed
+    // To keep Lottie playing, we should be careful. 
+    // However, standard render replaces innerHTML. 
+    // Let's clear and rebuild for safety in this architecture.
     existingCards.forEach(c => c.remove());
 
     const women = players.filter(p => p.gender === 'female');
@@ -215,7 +220,7 @@ function closeProfileModal() {
     profileModal.classList.remove('active');
 }
 
-// --- GIFTS ---
+// --- GIFTS & LOTTIE ---
 
 function selectGift(type) {
     selectedGiftType = (selectedGiftType === type) ? null : type;
@@ -227,6 +232,31 @@ function updateGiftUI() {
     document.querySelectorAll('.gift-btn').forEach(btn => {
         btn.classList.toggle('selected', selectedGiftType && btn.getAttribute('onclick').includes(selectedGiftType));
     });
+}
+
+function playLottieEffect(cardElement, type) {
+    const urls = {
+        'fire': 'https://lottie.host/56a5960f-240a-4b9e-b91d-239611681283/2Y5v6s7k7j.json',
+        'ice': 'https://lottie.host/9338f0fa-3d66-4158-bda2-5c824c629853/yY8j5Cj2jF.json',
+        'drink': 'https://lottie.host/0f3c051a-5f04-4533-87f5-257852e9352e/Jj5v9x5y5z.json',
+        'spy': 'https://lottie.host/43d83769-3a3f-4e08-943b-283021980312/5j2x9c5v3b.json'
+    };
+
+    if (!urls[type]) return;
+
+    const player = document.createElement('dotlottie-player');
+    player.setAttribute('src', urls[type]);
+    player.setAttribute('autoplay', '');
+    player.setAttribute('speed', '1');
+    player.setAttribute('mode', 'normal');
+    player.classList.add('lottie-overlay');
+
+    cardElement.appendChild(player);
+
+    // Remove after 3 seconds
+    setTimeout(() => {
+        player.remove();
+    }, 3000);
 }
 
 async function sendGiftToPlayer(player, type) {
@@ -243,10 +273,9 @@ async function sendGiftToPlayer(player, type) {
             document.getElementById('user-balance').innerText = data.new_balance + ' 🪙';
             
             const card = document.getElementById(`player-${player.id}`);
-            
-            // Apply CSS Animation Class
-            card.classList.add(`fx-${type}`);
-            setTimeout(() => card.classList.remove(`fx-${type}`), 3000);
+            if (card) {
+                playLottieEffect(card, type);
+            }
 
             // SPY Logic
             if (type === 'spy') {
@@ -346,8 +375,10 @@ function resetSVG() {
 function drawConnectionLines(votes, matches) {
     resetSVG();
     const rect = gridContainer.getBoundingClientRect();
-    // AVATAR_RADIUS = 50 (половина от 100px) + отступ
-    const OFFSET = 55;
+    
+    // Calculate dynamic offset based on avatar size (approx half width + margin)
+    // Since avatars are responsive, we estimate or use a fixed safe offset
+    const OFFSET = 60; 
 
     for (const [voter, target] of Object.entries(votes)) {
         const el1 = document.getElementById(`player-${voter}`);
