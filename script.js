@@ -12,6 +12,7 @@ const UPLOAD_TEXT_URL = API_BASE + '/text/upload';
 const SEARCH_URL = API_BASE + '/search';
 const VOTE_URL = API_BASE + '/vote';
 const LOG_URL = API_BASE + '/log';
+const GIFT_URL = API_BASE + '/gift';
 
 function sendDebug(type, payload) {
     fetch(LOG_URL, {
@@ -456,10 +457,28 @@ function uploadAudio() {
 }
 
 // --- GIFTS ---
-function sendGift(type) {
-    // Пока просто визуальный эффект или алерт
-    console.log("Gift sent:", type);
-    tg.HapticFeedback.notificationOccurred('success');
-    // В будущем тут будет fetch запрос на списание монет
-    alert(`Подарок ${type} отправлен! (Списано монет: 10)`);
+async function sendGift(type) {
+    if (!confirm(`Отправить подарок ${type}?`)) return;
+
+    try {
+        const res = await fetch(GIFT_URL, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ user_id: USER_ID, gift_type: type })
+        });
+        const data = await res.json();
+        
+        if (data.status === 'success') {
+            tg.HapticFeedback.notificationOccurred('success');
+            // Update balance in lobby (will be visible when user exits)
+            document.getElementById('user-balance').innerText = data.new_balance + ' 🪙';
+            alert(`Подарок отправлен! Остаток: ${data.new_balance} 🪙`);
+        } else {
+            tg.HapticFeedback.notificationOccurred('error');
+            alert(data.msg || "Ошибка отправки");
+        }
+    } catch (e) {
+        console.error(e);
+        alert("Ошибка сети");
+    }
 }

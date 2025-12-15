@@ -51,10 +51,17 @@ body {
 .nav-item.active { opacity: 1; color: var(--neon-blue); transform: translateY(-5px); text-shadow: 0 0 10px var(--neon-blue); }
 
 .game-header { 
-    padding: 15px 20px; display: flex; justify-content: space-between; 
+    padding: 15px 20px; display: flex; justify-content: space-between; align-items: center;
     font-weight: 800; font-size: 14px; letter-spacing: 1px; color: #888;
 }
 #game-timer { color: white; font-size: 18px; text-shadow: 0 0 10px red; }
+
+.nav-exit {
+    color: #ff4444; font-weight: 800; cursor: pointer; font-size: 12px; letter-spacing: 1px;
+    border: 1px solid rgba(255, 68, 68, 0.3); padding: 5px 10px; border-radius: 8px;
+    background: rgba(255, 68, 68, 0.1); transition: all 0.2s;
+}
+.nav-exit:active { transform: scale(0.95); opacity: 0.8; background: rgba(255, 68, 68, 0.2); }
 
 .top-spotlight {
     position: absolute; top: 60px; left: 50%; transform: translateX(-50%);
@@ -244,14 +251,6 @@ body {
 
 #debug-console {
     display: none !important;
-}
-
-.force-exit-btn {
-    position: absolute; top: 55px; left: 10px;
-    background: rgba(255, 0, 0, 0.2); color: rgba(255,255,255,0.7);
-    border: 1px solid rgba(255,0,0,0.5); font-size: 9px; padding: 4px 8px;
-    border-radius: 4px;
-    z-index: 5000; cursor: pointer;
 }
 
 /* Dimmed state for same-gender cards during voting */
