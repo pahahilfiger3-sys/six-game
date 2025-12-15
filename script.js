@@ -24,6 +24,7 @@ function sendDebug(type, payload) {
 // User Data
 const u = tg.initDataUnsafe.user;
 let USER_ID, myName = "Игрок", myPhoto = "";
+let myGender = "male"; // Default
 
 if (u && u.id) {
     USER_ID = u.id;
@@ -100,6 +101,10 @@ function updateGame(data) {
     document.getElementById('q-text-val').innerText = data.question;
     document.querySelector('.q-label').innerText = 'РАУНД ' + data.round;
 
+    // Detect my gender from players list
+    const me = data.players.find(p => p.id === USER_ID);
+    if (me) myGender = me.gender;
+
     if (currentPhase !== data.phase) {
         currentPhase = data.phase;
         handlePhaseChange(data.phase);
@@ -153,9 +158,6 @@ function handlePhaseChange(phase) {
 }
 
 function renderPlayers(players, phase) {
-    // Keep existing cards if possible to avoid flicker, but for simplicity we rebuild
-    // To optimize: check if innerHTML needs update. For now, rebuild is safer for state.
-    
     // Clear only cards, keep SVG
     const existingCards = document.querySelectorAll('.player-card');
     existingCards.forEach(c => c.remove());
@@ -177,6 +179,11 @@ function renderPlayers(players, phase) {
         card.className = `player-card ${isFemale ? 'team-left' : 'team-right'}`;
         card.id = `player-${p.id}`; // ID for SVG positioning
         
+        // Visual dimming for same gender during voting
+        if (phase === 'voting' && p.gender === myGender && !isMe) {
+            card.classList.add('dimmed');
+        }
+        
         if (currentPlayerId === p.id && currentPlayerId !== null) {
             card.classList.add('playing');
         }
@@ -197,19 +204,43 @@ function renderPlayers(players, phase) {
         } else if (phase === 'voting' && !isMe) {
              card.onclick = () => castVote(p);
         } else if (phase === 'results' && !isMe) {
-             card.onclick = () => {
-                 if(confirm("Купить контакт этого игрока за 50 монет?")) {
-                     alert("Функция в разработке!");
-                 }
-             };
+             card.onclick = () => handleResultClick(p);
         }
 
         gridContainer.appendChild(card);
     });
 }
 
+function handleResultClick(player) {
+    // First click: Show answer (if available)
+    if (currentPlayerId !== player.id) {
+        if (player.has_answer) {
+            activateSpotlight(player);
+        } else {
+            // If no answer to show, go straight to buy prompt
+            promptBuy(player);
+        }
+    } else {
+        // Second click (already spotlighted): Prompt buy
+        promptBuy(player);
+    }
+}
+
+function promptBuy(player) {
+    if(confirm(`Купить контакт ${player.name} за 50 монет?`)) {
+        alert("Функция в разработке!");
+    }
+}
+
 async function castVote(player) {
     if (hasVoted) return;
+    
+    // Gender check
+    if (player.gender === myGender) {
+        alert("Выбирать можно только противоположный пол!");
+        return;
+    }
+
     if (!confirm(`Голосовать за ${player.name}?`)) return;
 
     hasVoted = true;

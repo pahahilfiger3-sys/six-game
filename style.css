@@ -255,6 +255,13 @@ body {
     z-index: 5000; cursor: pointer;
 }
 
+/* Dimmed state for same-gender cards during voting */
+.dimmed {
+    opacity: 0.5;
+    filter: grayscale(100%);
+    cursor: not-allowed;
+}
+
 @keyframes spin { to { transform: rotate(360deg); } }
 
 @media (max-height: 700px) {
