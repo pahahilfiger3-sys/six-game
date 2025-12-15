@@ -64,7 +64,7 @@ function forceExit() {
     currentPhase = "";
     currentPlayerId = null;
     hasVoted = false;
-    svgLayer.innerHTML = '';
+    svgLayer.innerHTML = '<defs><marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#00f3ff" /></marker><marker id="arrowhead-match" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#00ff88" /></marker></defs>';
 }
 
 async function startSearching() {
@@ -128,7 +128,8 @@ function handlePhaseChange(phase) {
     const qBox = document.getElementById('q-box-content');
     
     // Reset states
-    svgLayer.innerHTML = '';
+    // Keep defs in SVG
+    svgLayer.innerHTML = '<defs><marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#00f3ff" /></marker><marker id="arrowhead-match" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#00ff88" /></marker></defs>';
     lastVotesMap = null;
 
     if (phase === 'recording') {
@@ -304,8 +305,11 @@ function stopPlayback() {
 
 // --- VISUALS: ARROWS ---
 function drawConnectionLines(votesMap, matches) {
-    svgLayer.innerHTML = ''; // Clear old lines
+    // Reset SVG but keep defs
+    svgLayer.innerHTML = '<defs><marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#00f3ff" /></marker><marker id="arrowhead-match" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#00ff88" /></marker></defs>';
+    
     const containerRect = gridContainer.getBoundingClientRect();
+    const AVATAR_RADIUS = 55; // Approx radius + border + gap
 
     // Helper to check if a pair is a match
     const isMatch = (id1, id2) => {
@@ -321,11 +325,23 @@ function drawConnectionLines(votesMap, matches) {
             const fromRect = fromEl.querySelector('.avatar').getBoundingClientRect();
             const toRect = toEl.querySelector('.avatar').getBoundingClientRect();
 
-            // Calculate centers relative to the container
-            const x1 = fromRect.left + fromRect.width / 2 - containerRect.left;
-            const y1 = fromRect.top + fromRect.height / 2 - containerRect.top;
-            const x2 = toRect.left + toRect.width / 2 - containerRect.left;
-            const y2 = toRect.top + toRect.height / 2 - containerRect.top;
+            // Centers relative to container
+            const cx1 = fromRect.left + fromRect.width / 2 - containerRect.left;
+            const cy1 = fromRect.top + fromRect.height / 2 - containerRect.top;
+            const cx2 = toRect.left + toRect.width / 2 - containerRect.left;
+            const cy2 = toRect.top + toRect.height / 2 - containerRect.top;
+
+            // Calculate angle
+            const angle = Math.atan2(cy2 - cy1, cx2 - cx1);
+
+            // Calculate start and end points on the edge of the circle
+            // Start point (optional, can start from center, but looks better from edge)
+            const x1 = cx1 + AVATAR_RADIUS * Math.cos(angle);
+            const y1 = cy1 + AVATAR_RADIUS * Math.sin(angle);
+
+            // End point (arrow tip touches target circle)
+            const x2 = cx2 - AVATAR_RADIUS * Math.cos(angle);
+            const y2 = cy2 - AVATAR_RADIUS * Math.sin(angle);
 
             const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
             line.setAttribute('x1', x1);
@@ -335,8 +351,10 @@ function drawConnectionLines(votesMap, matches) {
 
             if (isMatch(voterId, targetId)) {
                 line.setAttribute('class', 'line-match');
+                line.setAttribute('marker-end', 'url(#arrowhead-match)');
             } else {
                 line.setAttribute('class', 'line-normal');
+                line.setAttribute('marker-end', 'url(#arrowhead)');
             }
 
             svgLayer.appendChild(line);
@@ -347,9 +365,7 @@ function drawConnectionLines(votesMap, matches) {
 // Redraw on resize
 window.addEventListener('resize', () => {
     if (currentPhase === 'results' && lastVotesMap) {
-        // Need matches data here, but it's not stored globally. 
-        // Ideally, store full last data object. For now, lines might disappear until next poll.
-        // Better: fetch will redraw in <1s.
+        // Ideally we should store matches too, but for now just wait for next poll
     }
 });
 
