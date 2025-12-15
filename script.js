@@ -48,15 +48,19 @@ const profileImg = document.getElementById('profile-large-img');
 // --- NAVIGATION ---
 
 function forceExit() {
+    console.log('Force Exit Triggered');
     if (searchInterval) clearInterval(searchInterval);
     if (currentAudio) { currentAudio.pause(); currentAudio = null; }
+    
     screenGame.classList.remove('active');
     screenSearch.classList.remove('active');
     screenLobby.classList.add('active');
+    
     currentPhase = "";
     currentPlayerId = null;
     hasVoted = false;
     selectedGiftType = null;
+    
     updateGiftUI();
     resetSVG();
     closeProfileModal();
@@ -342,7 +346,7 @@ function resetSVG() {
 function drawConnectionLines(votes, matches) {
     resetSVG();
     const rect = gridContainer.getBoundingClientRect();
-    // AVATAR_RADIUS = 55 (приблизительно половина от 100px + отступ)
+    // AVATAR_RADIUS = 50 (половина от 100px) + отступ
     const OFFSET = 55;
 
     for (const [voter, target] of Object.entries(votes)) {
