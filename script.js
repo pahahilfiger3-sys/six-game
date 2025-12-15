@@ -71,11 +71,17 @@ function forceExit() {
     selectedGiftType = null;
     updateGiftUI();
     svgLayer.innerHTML = '<defs><marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#00f3ff" /></marker><marker id="arrowhead-match" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#00ff88" /></marker></defs>';
+    
+    // Reset buttons
+    document.querySelectorAll('.action-btn').forEach(b => b.classList.remove('disabled'));
 }
 
 async function startSearching() {
     screenLobby.classList.remove('active');
     screenSearch.classList.add('active');
+    
+    // Ensure buttons are active for new game
+    document.querySelectorAll('.action-btn').forEach(b => b.classList.remove('disabled'));
     
     if (searchInterval) clearInterval(searchInterval);
     
@@ -118,11 +124,19 @@ function updateGame(data) {
 
     renderPlayers(data.players, data.phase);
 
-    if (data.phase === 'results' && data.votes_map) {
-        // Only redraw if votes changed or first time
-        if (JSON.stringify(data.votes_map) !== JSON.stringify(lastVotesMap)) {
-            lastVotesMap = data.votes_map;
-            drawConnectionLines(data.votes_map, data.matches);
+    if (data.phase === 'results') {
+        // Auto-exit logic
+        if (data.time_left <= 0) {
+            forceExit();
+            return;
+        }
+
+        if (data.votes_map) {
+            // Only redraw if votes changed or first time
+            if (JSON.stringify(data.votes_map) !== JSON.stringify(lastVotesMap)) {
+                lastVotesMap = data.votes_map;
+                drawConnectionLines(data.votes_map, data.matches);
+            }
         }
     }
 }
