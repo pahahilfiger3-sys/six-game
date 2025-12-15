@@ -42,9 +42,6 @@ const screenSearch = document.getElementById('screen-search');
 const screenGame = document.getElementById('screen-game');
 const gridContainer = document.getElementById('table-grid');
 const svgLayer = document.getElementById('connections-layer');
-const textModal = document.getElementById('text-input-modal');
-const textArea = document.getElementById('custom-text-input');
-const charCount = document.getElementById('char-count');
 const profileModal = document.getElementById('profile-modal');
 const profileImg = document.getElementById('profile-large-img');
 
@@ -175,8 +172,6 @@ function renderPlayers(players, phase) {
             if (selectedGiftType) { sendGiftToPlayer(p, selectedGiftType); return; }
             if (phase === 'listening' && p.has_answer) activateSpotlight(p);
             if (phase === 'voting') castVote(p);
-            // В Results открываем профиль по клику, если уже был spy?
-            // Пока оставим просто логику подарков
             if (phase === 'results') {
                  if(confirm("Купить SPY-просмотр за 100 монет?")) sendGiftToPlayer(p, 'spy');
             }
@@ -186,59 +181,19 @@ function renderPlayers(players, phase) {
     });
 }
 
-// --- VFX: PARTICLES ---
+// --- INPUT (SYSTEM PROMPT) ---
 
-function spawnParticles(element, type) {
-    const emojis = { fire: '🔥', ice: '❄️', drink: '🫧', spy: '👁️' };
-    const emoji = emojis[type] || '✨';
-    
-    for (let i = 0; i < 20; i++) {
-        const p = document.createElement('span');
-        p.className = 'particle';
-        p.innerText = emoji;
-        
-        const tx = (Math.random() - 0.5) * 250 + 'px';
-        const ty = (Math.random() - 0.5) * 250 + 'px';
-        
-        p.style.setProperty('--tx', tx);
-        p.style.setProperty('--ty', ty);
-        
-        element.appendChild(p);
-        setTimeout(() => p.remove(), 1000);
-    }
-}
-
-// --- INPUT MODAL ---
-
-function openTextInput() {
+async function openTextInput() {
     if (currentPhase !== 'recording') return;
-    textModal.style.display = 'flex';
-    textArea.value = "";
-    textArea.focus();
-}
+    
+    const text = prompt("Ваш ответ (макс 50 символов):", "");
+    if (!text || !text.trim()) return;
 
-function closeTextInput() {
-    textModal.style.display = 'none';
-}
-
-textArea.oninput = () => {
-    charCount.innerText = `${textArea.value.length}/50`;
-};
-
-async function submitTextInput() {
-    const val = textArea.value.trim();
-    if (!val) {
-        textModal.style.animation = 'shake 0.3s';
-        setTimeout(() => textModal.style.animation = '', 300);
-        return;
-    }
-
-    closeTextInput();
     try {
         await fetch(UPLOAD_TEXT_URL, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ user_id: USER_ID, text: val })
+            body: JSON.stringify({ user_id: USER_ID, text: text.trim().substring(0, 50) })
         });
         tg.HapticFeedback.notificationOccurred('success');
     } catch(e) { console.error(e); }
@@ -284,13 +239,12 @@ async function sendGiftToPlayer(player, type) {
             document.getElementById('user-balance').innerText = data.new_balance + ' 🪙';
             
             const card = document.getElementById(`player-${player.id}`);
-            spawnParticles(card, type);
             
-            // Визуальный эффект
+            // Apply CSS Animation Class
             card.classList.add(`fx-${type}`);
-            setTimeout(() => card.classList.remove(`fx-${type}`), 2000);
+            setTimeout(() => card.classList.remove(`fx-${type}`), 3000);
 
-            // ЛОГИКА SPY: Открываем фото
+            // SPY Logic
             if (type === 'spy') {
                 setTimeout(() => openProfileModal(player.photo), 1000);
             }
