@@ -70,7 +70,6 @@ async function startSearching() {
     screenLobby.classList.remove('active');
     screenSearch.classList.add('active');
     
-    // Сброс блокировки кнопок при старте
     document.getElementById('mic-btn').classList.remove('disabled');
     document.getElementById('kb-btn').classList.remove('disabled');
     
@@ -92,7 +91,6 @@ async function startSearching() {
                 }
                 updateGame(data);
             }
-            // Авто-выход в лобби
             if (data.status === 'in_game' && data.phase === 'results' && data.time_left <= 0) {
                  forceExit();
             }
@@ -130,7 +128,6 @@ function handlePhaseChange(phase) {
     resetSVG();
     
     if (phase === 'recording') {
-        // Принудительная разблокировка
         btns.forEach(b => b.classList.remove('disabled'));
         document.getElementById('player-box-content').style.display = 'none';
         document.getElementById('q-box-content').style.display = 'block';
@@ -143,38 +140,46 @@ function handlePhaseChange(phase) {
 }
 
 function renderPlayers(players, phase) {
-    const existingCards = document.querySelectorAll('.player-card');
-    existingCards.forEach(c => c.remove());
-
+    // Only re-render if count changes or first load to preserve animations/blur states
+    // But for simplicity and state sync, we re-render and re-apply classes.
+    // To prevent flickering, we check if elements exist.
+    
     const women = players.filter(p => p.gender === 'female');
     const men = players.filter(p => p.gender === 'male');
-
     const sorted = [];
     for (let i = 0; i < 3; i++) {
         if (women[i]) sorted.push(women[i]);
         if (men[i]) sorted.push(men[i]);
     }
 
+    // Clear grid if player count mismatches (rare) or just clear to rebuild
+    const grid = document.getElementById('table-grid');
+    // We will rebuild to ensure state is correct
+    const existingCards = Array.from(document.querySelectorAll('.player-card'));
+    existingCards.forEach(c => c.remove());
+
     sorted.forEach(p => {
         const isMe = p.id === USER_ID;
         const card = document.createElement('div');
-        // No team-left/right classes needed for styling anymore, but kept for logic if needed
         card.className = `player-card ${p.gender === 'female' ? 'team-left' : 'team-right'}`;
         card.id = `player-${p.id}`;
         
         if (phase === 'voting' && p.gender === myGender && !isMe) card.style.opacity = "0.3";
         if (currentPlayerId === p.id) card.classList.add('playing');
 
+        // BLUR LOGIC: Apply blur-mask to everyone except me
+        const blurClass = !isMe ? 'blur-mask' : '';
+
         card.innerHTML = `
-            <div class="avatar" style="background-image:url('${p.photo || ''}')">
+            <div class="avatar ${blurClass}" style="background-image:url('${p.photo || ''}')">
                 <div class="status-check" style="display:${p.has_answer ? 'flex' : 'none'}">✅</div>
             </div>
             <div class="name-tag" style="${isMe ? 'color:var(--neon-blue)' : ''}">${isMe ? 'ВЫ' : p.name}</div>
         `;
 
         card.onclick = () => {
-            if (isMe) return;
             if (selectedGiftType) { sendGiftToPlayer(p, selectedGiftType); return; }
+            if (isMe) return;
             if (phase === 'listening' && p.has_answer) activateSpotlight(p);
             if (phase === 'voting') castVote(p);
             if (phase === 'results') {
@@ -182,7 +187,7 @@ function renderPlayers(players, phase) {
             }
         };
 
-        gridContainer.appendChild(card);
+        grid.appendChild(card);
     });
 }
 
@@ -243,20 +248,34 @@ async function sendGiftToPlayer(player, type) {
             tg.HapticFeedback.notificationOccurred('success');
             document.getElementById('user-balance').innerText = data.new_balance + ' 🪙';
             
-            // CSS Animation Trigger
+            // Visual FX
             const card = document.getElementById(`player-${player.id}`);
             if (card) {
                 const fxClass = `fx-${type}`;
                 card.classList.add(fxClass);
-                setTimeout(() => {
-                    card.classList.remove(fxClass);
-                }, 3000);
+                setTimeout(() => card.classList.remove(fxClass), 3000);
             }
 
-            // SPY Logic
+            // LOGIC PER GIFT TYPE
             if (type === 'spy') {
-                setTimeout(() => openProfileModal(player.photo), 1000);
+                setTimeout(() => openProfileModal(player.photo), 500);
             }
+            else if (type === 'joker') {
+                alert("🃏 ДЖОКЕР! Вопрос раунда изменен!");
+            }
+            else if (type === 'xray') {
+                // Reveal ALL players
+                document.querySelectorAll('.blur-mask').forEach(el => {
+                    el.classList.add('reveal');
+                });
+                // Revert after 10s
+                setTimeout(() => {
+                    document.querySelectorAll('.reveal').forEach(el => {
+                        el.classList.remove('reveal');
+                    });
+                }, 10000);
+            }
+
         } else {
             alert(data.msg === 'No money' ? "Недостаточно монет!" : "Ошибка");
         }
@@ -351,8 +370,6 @@ function resetSVG() {
 function drawConnectionLines(votes, matches) {
     resetSVG();
     const rect = gridContainer.getBoundingClientRect();
-    
-    // Calculate dynamic offset based on avatar size (approx half width + margin)
     const OFFSET = 60; 
 
     for (const [voter, target] of Object.entries(votes)) {
@@ -366,7 +383,6 @@ function drawConnectionLines(votes, matches) {
             const x2 = r2.left + r2.width/2 - rect.left;
             const y2 = r2.top + r2.height/2 - rect.top;
 
-            // Math to stop line at circle edge
             const angle = Math.atan2(y2 - y1, x2 - x1);
             const endX = x2 - OFFSET * Math.cos(angle);
             const endY = y2 - OFFSET * Math.sin(angle);
