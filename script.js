@@ -35,6 +35,7 @@ let currentPlayerId = null;
 let hasVoted = false;
 let lastVotesMap = null;
 let selectedGiftType = null;
+let isXrayActive = false; // X-Ray State
 
 // UI Elements
 const screenLobby = document.getElementById('screen-lobby');
@@ -60,6 +61,7 @@ function forceExit() {
     currentPlayerId = null;
     hasVoted = false;
     selectedGiftType = null;
+    isXrayActive = false; // Reset X-Ray
     
     updateGiftUI();
     resetSVG();
@@ -140,10 +142,6 @@ function handlePhaseChange(phase) {
 }
 
 function renderPlayers(players, phase) {
-    // Only re-render if count changes or first load to preserve animations/blur states
-    // But for simplicity and state sync, we re-render and re-apply classes.
-    // To prevent flickering, we check if elements exist.
-    
     const women = players.filter(p => p.gender === 'female');
     const men = players.filter(p => p.gender === 'male');
     const sorted = [];
@@ -152,27 +150,29 @@ function renderPlayers(players, phase) {
         if (men[i]) sorted.push(men[i]);
     }
 
-    // Clear grid if player count mismatches (rare) or just clear to rebuild
     const grid = document.getElementById('table-grid');
-    // We will rebuild to ensure state is correct
+    // Clean existing to ensure state sync
     const existingCards = Array.from(document.querySelectorAll('.player-card'));
     existingCards.forEach(c => c.remove());
 
     sorted.forEach(p => {
         const isMe = p.id === USER_ID;
         const card = document.createElement('div');
-        card.className = `player-card ${p.gender === 'female' ? 'team-left' : 'team-right'}`;
+        const teamClass = p.gender === 'female' ? 'team-left' : 'team-right';
+        card.className = `player-card ${teamClass}`;
         card.id = `player-${p.id}`;
         
         if (phase === 'voting' && p.gender === myGender && !isMe) card.style.opacity = "0.3";
         if (currentPlayerId === p.id) card.classList.add('playing');
 
-        // BLUR LOGIC: Apply blur-mask to everyone except me
-        const blurClass = !isMe ? 'blur-mask' : '';
+        // BLUR LOGIC: Blur everyone else unless X-Ray is active
+        const shouldBlur = !isMe && !isXrayActive;
+        const blurClass = shouldBlur ? 'blur-mask' : '';
 
         card.innerHTML = `
-            <div class="avatar ${blurClass}" style="background-image:url('${p.photo || ''}')">
-                <div class="status-check" style="display:${p.has_answer ? 'flex' : 'none'}">✅</div>
+            <div class="avatar-container">
+                <div class="avatar ${blurClass}" style="background-image:url('${p.photo || ''}')"></div>
+                <div class="status-badge" style="display:${p.has_answer ? 'flex' : 'none'}">✅</div>
             </div>
             <div class="name-tag" style="${isMe ? 'color:var(--neon-blue)' : ''}">${isMe ? 'ВЫ' : p.name}</div>
         `;
@@ -264,16 +264,12 @@ async function sendGiftToPlayer(player, type) {
                 alert("🃏 ДЖОКЕР! Вопрос раунда изменен!");
             }
             else if (type === 'xray') {
-                // Reveal ALL players
+                isXrayActive = true;
+                // Immediately remove blur from current view
                 document.querySelectorAll('.blur-mask').forEach(el => {
-                    el.classList.add('reveal');
+                    el.classList.remove('blur-mask');
                 });
-                // Revert after 10s
-                setTimeout(() => {
-                    document.querySelectorAll('.reveal').forEach(el => {
-                        el.classList.remove('reveal');
-                    });
-                }, 10000);
+                tg.HapticFeedback.notificationOccurred('success');
             }
 
         } else {

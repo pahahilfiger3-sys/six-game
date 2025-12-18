@@ -172,17 +172,43 @@ body {
     z-index: 1; overflow: visible !important;
 }
 
-/* RESPONSIVE AVATAR - GOLD THEME */
-.avatar { 
+/* NEW AVATAR CONTAINER (To handle absolute badges) */
+.avatar-container {
     width: clamp(75px, 22vw, 110px); 
     height: clamp(75px, 22vw, 110px);
+    position: relative;
+}
+
+/* RESPONSIVE AVATAR - GOLD THEME */
+.avatar { 
+    width: 100%; height: 100%;
     border-radius: 20px; 
     background: #222; background-size: cover; background-position: center;
     position: relative; transition: all 0.5s ease;
     border: 2px solid var(--gold); 
     box-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
-    overflow: hidden;
+    overflow: hidden; /* Only clips image */
 }
+
+/* STATUS BADGE (CHECKMARK) */
+.status-badge {
+    position: absolute;
+    top: -5px; 
+    width: 24px; height: 24px;
+    background: #000; border: 1px solid var(--neon-green);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    z-index: 20;
+    box-shadow: 0 0 10px var(--neon-green);
+}
+.status-badge svg { fill: var(--neon-green); width: 16px; height: 16px; }
+
+/* Pos Right (Left Team) */
+.pos-right { right: -5px; }
+
+/* Pos Left (Right Team) */
+.pos-left { left: -5px; }
+
 
 /* BLUR SYSTEM */
 .avatar.blur-mask {
@@ -280,13 +306,6 @@ body {
 #profile-modal.active { display: flex; }
 #profile-large-img { width: 85%; max-width: 400px; border-radius: 20px; border: 2px solid var(--neon-blue); }
 .modal-close { position: absolute; top: 20px; right: 20px; font-size: 30px; color: white; cursor: pointer; }
-
-.status-check {
-    position: absolute; top: -5px; right: -5px; width: 24px; height: 24px;
-    background: var(--neon-green); color: #000; border-radius: 50%;
-    display: none; align-items: center; justify-content: center;
-    font-size: 14px; border: 2px solid #000; z-index: 20;
-}
 
 /* --- HIGH-END CSS ANIMATIONS --- */
 
