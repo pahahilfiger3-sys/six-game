@@ -180,13 +180,15 @@ function renderPlayers(players, phase) {
         // BLUR & X-RAY LOGIC
         const blurClass = (!isMe && !isXrayActive) ? 'blur-mask' : 'reveal';
         
-        // CHECKMARK SYMMETRY
+        // CHECKMARK SYMMETRY (Inner Edge)
         const badgePosClass = isLeftTeam ? 'pos-right' : 'pos-left';
 
         card.innerHTML = `
             <div class="avatar-wrapper">
                 <div class="avatar ${blurClass}" style="background-image:url('${p.photo || ''}')"></div>
-                <div class="status-check ${badgePosClass}" style="display:${p.has_answer ? 'flex' : 'none'}">✅</div>
+                <div class="status-check ${badgePosClass}" style="display:${p.has_answer ? 'flex' : 'none'}">
+                    <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                </div>
             </div>
             <div class="name-tag" style="${isMe ? 'color:var(--neon-blue)' : ''}">${isMe ? 'ВЫ' : p.name}</div>
         `;
