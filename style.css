@@ -295,7 +295,7 @@ body {
 
 .mic-btn {
     width: 80px; height: 80px; 
-    background-color: rgba(20, 20, 30, 0.95); /* Opaque background to hide border */
+    background-color: #05050a; /* Opaque background to hide border */
     border-radius: 50%; display: flex; justify-content: center; align-items: center;
     box-shadow: 0 0 0 5px var(--bg-dark); /* Fake border mask */
     border: 2px solid var(--neon-blue); cursor: pointer; z-index: 100;
