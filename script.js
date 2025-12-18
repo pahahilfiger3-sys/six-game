@@ -46,6 +46,14 @@ const gridContainer = document.getElementById('table-grid');
 const svgLayer = document.getElementById('connections-layer');
 const profileModal = document.getElementById('profile-modal');
 const profileImg = document.getElementById('profile-large-img');
+const giftToast = document.getElementById('gift-info-toast');
+
+const GIFT_DESCRIPTIONS = {
+    'heart': "❤️ ЛАЙК: Выразить симпатию",
+    'joker': "🃏 ДЖОКЕР: Сменить вопрос",
+    'spy': "👁 ШПИОН: Открыть фото",
+    'xray': "☢️ РЕНТГЕН: Увидеть всех"
+};
 
 // --- NAVIGATION ---
 
@@ -68,6 +76,7 @@ function forceExit() {
     updateGiftUI();
     resetSVG();
     closeProfileModal();
+    giftToast.classList.remove('visible');
 }
 
 async function startSearching() {
@@ -229,7 +238,14 @@ function closeProfileModal() {
 // --- GIFTS & VFX ---
 
 function selectGift(type) {
-    selectedGiftType = (selectedGiftType === type) ? null : type;
+    if (selectedGiftType === type) {
+        selectedGiftType = null;
+        giftToast.classList.remove('visible');
+    } else {
+        selectedGiftType = type;
+        giftToast.innerText = GIFT_DESCRIPTIONS[type];
+        giftToast.classList.add('visible');
+    }
     tg.HapticFeedback.impactOccurred('light');
     updateGiftUI();
 }
@@ -283,6 +299,7 @@ async function sendGiftToPlayer(player, type) {
     } catch (e) { console.error(e); }
     
     selectedGiftType = null;
+    giftToast.classList.remove('visible');
     updateGiftUI();
 }
 
