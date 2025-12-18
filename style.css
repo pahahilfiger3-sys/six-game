@@ -232,8 +232,8 @@ body {
     z-index: 50;
 }
 /* Position: Inner edge facing center */
-.status-check.pos-right { right: -25px; left: auto; }
-.status-check.pos-left { left: -25px; right: auto; }
+.status-check.pos-right { right: -35px; left: auto; }
+.status-check.pos-left { left: -35px; right: auto; }
 
 .status-check svg {
     width: 14px; height: 14px;
