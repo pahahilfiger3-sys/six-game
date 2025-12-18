@@ -178,7 +178,14 @@ function renderPlayers(players, phase) {
         if (currentPlayerId === p.id) card.classList.add('playing');
 
         // BLUR & X-RAY LOGIC
-        const blurClass = (!isMe && !isXrayActive) ? 'blur-mask' : 'reveal';
+        let blurClass = '';
+        if (phase === 'results') {
+            blurClass = ''; // Результаты -> Все открыты, Золотая рамка (базовый стиль)
+        } else if (isXrayActive) {
+            blurClass = 'reveal'; // X-Ray -> Открыты, Неоновая синяя рамка
+        } else if (!isMe) {
+            blurClass = 'blur-mask'; // Обычная игра -> Чужие заблюрены
+        }
         
         // CHECKMARK SYMMETRY (Inner Edge)
         const badgePosClass = isLeftTeam ? 'pos-right' : 'pos-left';
