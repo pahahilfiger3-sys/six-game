@@ -181,9 +181,9 @@ function renderPlayers(players, phase) {
         let blurClass = '';
         if (phase === 'results') {
             blurClass = ''; // Результаты -> Все открыты, Золотая рамка (базовый стиль)
-        } else if (isXrayActive) {
-            blurClass = 'reveal'; // X-Ray -> Открыты, Неоновая синяя рамка
-        } else if (!isMe) {
+        } else if (isMe || isXrayActive) {
+            blurClass = 'reveal'; // Я или X-Ray -> Открыты, Неоновая синяя рамка
+        } else {
             blurClass = 'blur-mask'; // Обычная игра -> Чужие заблюрены
         }
         
