@@ -35,7 +35,8 @@ let currentPlayerId = null;
 let hasVoted = false;
 let lastVotesMap = null;
 let selectedGiftType = null;
-let isXrayActive = false; // X-Ray State
+let isXrayActive = false;
+let lastGameData = null;
 
 // UI Elements
 const screenLobby = document.getElementById('screen-lobby');
@@ -61,7 +62,8 @@ function forceExit() {
     currentPlayerId = null;
     hasVoted = false;
     selectedGiftType = null;
-    isXrayActive = false; // Reset X-Ray
+    isXrayActive = false;
+    lastGameData = null;
     
     updateGiftUI();
     resetSVG();
@@ -103,6 +105,7 @@ async function startSearching() {
 // --- GAME LOGIC ---
 
 function updateGame(data) {
+    lastGameData = data;
     document.getElementById('game-timer').innerText = `00:${data.time_left < 10 ? '0'+data.time_left : data.time_left}`;
     document.getElementById('q-text-val').innerText = data.question;
     document.querySelector('.q-label').innerText = 'РАУНД ' + data.round;
@@ -151,28 +154,30 @@ function renderPlayers(players, phase) {
     }
 
     const grid = document.getElementById('table-grid');
-    // Clean existing to ensure state sync
     const existingCards = Array.from(document.querySelectorAll('.player-card'));
     existingCards.forEach(c => c.remove());
 
     sorted.forEach(p => {
         const isMe = p.id === USER_ID;
+        const isLeftTeam = p.gender === 'female';
+        
         const card = document.createElement('div');
-        const teamClass = p.gender === 'female' ? 'team-left' : 'team-right';
-        card.className = `player-card ${teamClass}`;
+        card.className = `player-card ${isLeftTeam ? 'team-left' : 'team-right'}`;
         card.id = `player-${p.id}`;
         
         if (phase === 'voting' && p.gender === myGender && !isMe) card.style.opacity = "0.3";
         if (currentPlayerId === p.id) card.classList.add('playing');
 
-        // BLUR LOGIC: Blur everyone else unless X-Ray is active
-        const shouldBlur = !isMe && !isXrayActive;
-        const blurClass = shouldBlur ? 'blur-mask' : '';
+        // BLUR & X-RAY LOGIC
+        const blurClass = (!isMe && !isXrayActive) ? 'blur-mask' : 'reveal';
+        
+        // CHECKMARK SYMMETRY
+        const badgePosClass = isLeftTeam ? 'pos-right' : 'pos-left';
 
         card.innerHTML = `
-            <div class="avatar-container">
+            <div class="avatar-wrapper">
                 <div class="avatar ${blurClass}" style="background-image:url('${p.photo || ''}')"></div>
-                <div class="status-badge" style="display:${p.has_answer ? 'flex' : 'none'}">✅</div>
+                <div class="status-check ${badgePosClass}" style="display:${p.has_answer ? 'flex' : 'none'}">✅</div>
             </div>
             <div class="name-tag" style="${isMe ? 'color:var(--neon-blue)' : ''}">${isMe ? 'ВЫ' : p.name}</div>
         `;
@@ -265,11 +270,11 @@ async function sendGiftToPlayer(player, type) {
             }
             else if (type === 'xray') {
                 isXrayActive = true;
-                // Immediately remove blur from current view
-                document.querySelectorAll('.blur-mask').forEach(el => {
+                // Instant update
+                document.querySelectorAll('.avatar.blur-mask').forEach(el => {
                     el.classList.remove('blur-mask');
+                    el.classList.add('reveal');
                 });
-                tg.HapticFeedback.notificationOccurred('success');
             }
 
         } else {
