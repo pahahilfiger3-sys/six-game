@@ -227,8 +227,8 @@ body {
     box-shadow: 0 0 8px var(--neon-green);
     z-index: 50;
 }
-.status-check.pos-right { right: 0; transform: translateX(30%); left: auto; }
-.status-check.pos-left { left: 0; transform: translateX(-30%); right: auto; }
+.status-check.pos-right { right: -10; transform: translateX(30%); left: auto; }
+.status-check.pos-left { left: -10; transform: translateX(-30%); right: auto; }
 
 /* --- TOAST --- */
 .gift-toast {
@@ -264,6 +264,10 @@ body {
     background: rgba(255,255,255,0.03); padding: 0 10px; border-radius: 12px;
     border: 1px solid transparent; transition: 0.2s; cursor: pointer;
     width: auto; min-width: 70px; height: 40px;
+    &::before, &::after {
+        content: none;
+        display: none;
+    }
 }
 .gift-btn.selected {
     border: 1px solid var(--neon-blue); background: rgba(0, 243, 255, 0.1);
@@ -283,7 +287,7 @@ body {
     width: 80px; height: 80px; 
     background-color: #121218; /* Opaque background to hide border */
     border-radius: 50%; display: flex; justify-content: center; align-items: center;
-    box-shadow: 0 -5px 15px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 0 0 5px #121218;
     border: 2px solid var(--neon-blue); cursor: pointer; z-index: 100;
     margin-top: -40px; 
 }
