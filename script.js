@@ -13,6 +13,8 @@ const CHAT_LIST_URL = API_BASE + '/chat/list';
 const CHAT_HISTORY_URL = API_BASE + '/chat/history';
 const CHAT_SEND_URL = API_BASE + '/chat/send';
 const CHAT_RESTORE_URL = API_BASE + '/chat/restore';
+const USER_GET_URL = API_BASE + '/user/get';
+const USER_UPDATE_URL = API_BASE + '/user/update';
 
 // User State
 const u = tg.initDataUnsafe.user;
@@ -47,12 +49,16 @@ let loadedChats = [];
 let currentChatId = null;
 let chatPollingInterval = null;
 
+// Profile State
+let tempGender = "male";
+
 // UI Elements
 const screenLobby = document.getElementById('screen-lobby');
 const screenSearch = document.getElementById('screen-search');
 const screenGame = document.getElementById('screen-game');
 const screenChatList = document.getElementById('screen-chat-list');
 const screenChatRoom = document.getElementById('screen-chat-room');
+const screenProfile = document.getElementById('screen-profile');
 const gridContainer = document.getElementById('table-grid');
 const svgLayer = document.getElementById('connections-layer');
 const profileModal = document.getElementById('profile-modal');
@@ -80,6 +86,9 @@ function switchScreen(screenName) {
         document.querySelector('.nav-item:nth-child(2)').classList.add('active');
     } else if (screenName === 'chatRoom') {
         screenChatRoom.classList.add('active');
+    } else if (screenName === 'profile') {
+        screenProfile.classList.add('active');
+        document.querySelector('.nav-item:nth-child(4)').classList.add('active');
     }
 }
 
@@ -119,7 +128,7 @@ async function startSearching() {
             const res = await fetch(SEARCH_URL, {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ user_id: USER_ID, name: myName, photo: myPhoto })
+                body: JSON.stringify({ user_id: USER_ID, name: myName, photo: myPhoto, gender: myGender })
             });
             const data = await res.json();
             
@@ -137,6 +146,83 @@ async function startSearching() {
     }, 1000);
 }
 
+// --- PROFILE LOGIC ---
+
+async function loadProfile() {
+    switchScreen('profile');
+    document.getElementById('profile-avatar-view').style.backgroundImage = `url('${myPhoto || "https://via.placeholder.com/150"}')`;
+    
+    try {
+        const res = await fetch(USER_GET_URL, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ user_id: USER_ID, name: myName })
+        });
+        const data = await res.json();
+        
+        if (data.status === 'success') {
+            const u = data.user;
+            document.getElementById('profile-balance').innerText = u.balance;
+            document.getElementById('profile-karma').innerText = u.karma + '%';
+            document.getElementById('input-name').value = u.name;
+            document.getElementById('input-age').value = u.age || '';
+            document.getElementById('input-city').value = u.city || '';
+            
+            myGender = u.gender;
+            tempGender = u.gender;
+            updateGenderToggleUI();
+            
+            // Update global vars
+            myName = u.name;
+        }
+    } catch (e) { console.error(e); }
+}
+
+function toggleGender(gender) {
+    tempGender = gender;
+    updateGenderToggleUI();
+    tg.HapticFeedback.selectionChanged();
+}
+
+function updateGenderToggleUI() {
+    document.querySelectorAll('.gender-option').forEach(el => {
+        el.classList.toggle('active', el.dataset.type === tempGender);
+    });
+}
+
+async function saveProfile() {
+    const name = document.getElementById('input-name').value.trim();
+    const age = parseInt(document.getElementById('input-age').value);
+    const city = document.getElementById('input-city').value.trim();
+    
+    if (!name) return alert("Name required");
+    if (age && (age < 16 || age > 99)) return alert("Age must be 16-99");
+    
+    try {
+        const res = await fetch(USER_UPDATE_URL, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                user_id: USER_ID,
+                name: name,
+                age: age || null,
+                city: city || null,
+                gender: tempGender
+            })
+        });
+        const data = await res.json();
+        
+        if (data.status === 'success') {
+            myGender = tempGender;
+            myName = name;
+            tg.HapticFeedback.notificationOccurred('success');
+            alert("Profile Saved ✅");
+        } else {
+            alert("Error saving profile");
+        }
+    } catch (e) { console.error(e); }
+}
+
 // --- GAME LOGIC ---
 
 function updateGame(data) {
@@ -144,9 +230,6 @@ function updateGame(data) {
     document.getElementById('game-timer').innerText = `00:${data.time_left < 10 ? '0'+data.time_left : data.time_left}`;
     document.getElementById('q-text-val').innerText = data.question;
     document.querySelector('.q-label').innerText = 'РАУНД ' + data.round;
-
-    const me = data.players.find(p => p.id === USER_ID);
-    if (me) myGender = me.gender;
 
     if (currentPhase !== data.phase) {
         currentPhase = data.phase;
@@ -206,14 +289,13 @@ function renderPlayers(players, phase) {
         // BLUR & X-RAY LOGIC
         let blurClass = '';
         if (phase === 'results') {
-            blurClass = ''; // Результаты -> Все открыты, Золотая рамка (базовый стиль)
+            blurClass = ''; 
         } else if (isMe || isXrayActive) {
-            blurClass = 'reveal'; // Я или X-Ray -> Открыты, Неоновая синяя рамка
+            blurClass = 'reveal'; 
         } else {
-            blurClass = 'blur-mask'; // Обычная игра -> Чужие заблюрены
+            blurClass = 'blur-mask'; 
         }
         
-        // CHECKMARK SYMMETRY (Inner Edge)
         const badgePosClass = isLeftTeam ? 'pos-right' : 'pos-left';
 
         card.innerHTML = `
@@ -304,7 +386,6 @@ async function sendGiftToPlayer(player, type) {
             tg.HapticFeedback.notificationOccurred('success');
             document.getElementById('user-balance').innerText = data.new_balance + ' 🪙';
             
-            // Visual FX
             const card = document.getElementById(`player-${player.id}`);
             if (card) {
                 const fxClass = `fx-${type}`;
@@ -312,7 +393,6 @@ async function sendGiftToPlayer(player, type) {
                 setTimeout(() => card.classList.remove(fxClass), 3000);
             }
 
-            // LOGIC PER GIFT TYPE
             if (type === 'spy') {
                 setTimeout(() => openProfileModal(player.photo), 500);
             }
@@ -321,7 +401,6 @@ async function sendGiftToPlayer(player, type) {
             }
             else if (type === 'xray') {
                 isXrayActive = true;
-                // Instant update
                 document.querySelectorAll('.avatar.blur-mask').forEach(el => {
                     el.classList.remove('blur-mask');
                     el.classList.add('reveal');
@@ -458,7 +537,6 @@ async function loadChatList(filter = 'active') {
     if (chatPollingInterval) clearInterval(chatPollingInterval);
     switchScreen('chatList');
     
-    // Update Tabs UI
     document.getElementById('tab-active').classList.toggle('active', filter === 'active');
     document.getElementById('tab-archive').classList.toggle('active', filter === 'archived');
     
@@ -500,7 +578,6 @@ function renderChatList(filter) {
             actionBtn = `<button class="chat-restore-btn" onclick="event.stopPropagation(); restoreChat(${chat.id})">RESTORE 50 🪙</button>`;
         }
 
-        // Use a default avatar if empty
         const avatarUrl = chat.partner_photo || 'https://via.placeholder.com/50/000000/FFFFFF/?text=?';
 
         div.innerHTML = `
@@ -533,7 +610,7 @@ async function restoreChat(chatId) {
         
         if (data.status === 'success') {
             document.getElementById('user-balance').innerText = data.new_balance + ' 🪙';
-            loadChatList('active'); // Switch to active tab
+            loadChatList('active'); 
         } else {
             alert(data.msg === 'No money' ? "Недостаточно монет!" : "Ошибка");
         }
@@ -544,16 +621,13 @@ async function openChat(chatId, name, photo) {
     currentChatId = chatId;
     switchScreen('chatRoom');
     
-    // Setup Header
     document.getElementById('chat-room-name').innerText = name;
     document.getElementById('chat-room-avatar').style.backgroundImage = `url('${photo}')`;
     document.getElementById('chat-room-avatar').onclick = () => openProfileModal(photo);
     document.getElementById('chat-room-name').onclick = () => openProfileModal(photo);
     
-    // Initial Load
     await fetchMessages();
     
-    // Start Polling
     if (chatPollingInterval) clearInterval(chatPollingInterval);
     chatPollingInterval = setInterval(fetchMessages, 3000);
 }
@@ -577,7 +651,6 @@ async function fetchMessages() {
 
 function renderMessages(messages) {
     const area = document.getElementById('chat-messages-area');
-    // Simple diff check could be added here for performance, but full redraw is safer for MVP
     area.innerHTML = '';
     
     messages.forEach(m => {
@@ -601,7 +674,6 @@ function renderMessages(messages) {
         area.appendChild(div);
     });
     
-    // Auto scroll to bottom
     area.scrollTop = area.scrollHeight;
 }
 
@@ -610,7 +682,7 @@ async function sendMessage() {
     const text = input.value.trim();
     if (!text || !currentChatId) return;
     
-    input.value = ''; // Clear immediately
+    input.value = ''; 
     
     try {
         const res = await fetch(CHAT_SEND_URL, {
@@ -621,7 +693,7 @@ async function sendMessage() {
         const data = await res.json();
         
         if (data.status === 'success') {
-            fetchMessages(); // Refresh immediately
+            fetchMessages(); 
         } else {
             alert(data.msg || "Ошибка отправки");
         }

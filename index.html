@@ -24,7 +24,7 @@
                 <div class="nav-item active" onclick="switchScreen('lobby')">🏠</div>
                 <div class="nav-item" onclick="loadChatList()">💬</div>
                 <div class="nav-item">🛍</div>
-                <div class="nav-item">👤</div>
+                <div class="nav-item" onclick="loadProfile()">👤</div>
             </div>
         </div>
 
@@ -139,6 +139,53 @@
                 <button class="chat-send-btn" onclick="sendMessage()">
                     <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
                 </button>
+            </div>
+        </div>
+
+        <!-- PROFILE SCREEN -->
+        <div id="screen-profile" class="screen">
+            <div class="chat-header">
+                <div class="chat-back-btn" onclick="switchScreen('lobby')">⬅</div>
+                <div>PROFILE</div>
+                <div style="font-size: 20px;">⚙️</div>
+            </div>
+            <div class="profile-container">
+                <div class="profile-stats-row">
+                    <div class="stat-box">
+                        <div class="stat-val" style="color:var(--gold)" id="profile-balance">0</div>
+                        <div class="stat-label">BALANCE</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-val" style="color:var(--neon-purple)" id="profile-karma">100</div>
+                        <div class="stat-label">KARMA</div>
+                    </div>
+                </div>
+
+                <div class="profile-avatar-large" id="profile-avatar-view"></div>
+
+                <div class="profile-form">
+                    <div class="profile-input-group">
+                        <span class="input-label">NAME</span>
+                        <input type="text" class="profile-input" id="input-name" placeholder="Your Name">
+                    </div>
+                    
+                    <div class="profile-input-group">
+                        <span class="input-label">AGE</span>
+                        <input type="number" class="profile-input" id="input-age" placeholder="18+">
+                    </div>
+
+                    <div class="profile-input-group">
+                        <span class="input-label">CITY</span>
+                        <input type="text" class="profile-input" id="input-city" placeholder="Night City">
+                    </div>
+
+                    <div class="gender-toggle">
+                        <div class="gender-option" data-type="male" onclick="toggleGender('male')">MALE</div>
+                        <div class="gender-option" data-type="female" onclick="toggleGender('female')">FEMALE</div>
+                    </div>
+
+                    <button class="save-btn" onclick="saveProfile()">SAVE CHANGES</button>
+                </div>
             </div>
         </div>
 
