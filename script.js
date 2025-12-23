@@ -9,6 +9,10 @@ const UPLOAD_TEXT_URL = API_BASE + '/text/upload';
 const SEARCH_URL = API_BASE + '/search';
 const VOTE_URL = API_BASE + '/vote';
 const GIFT_URL = API_BASE + '/gift';
+const CHAT_LIST_URL = API_BASE + '/chat/list';
+const CHAT_HISTORY_URL = API_BASE + '/chat/history';
+const CHAT_SEND_URL = API_BASE + '/chat/send';
+const CHAT_RESTORE_URL = API_BASE + '/chat/restore';
 
 // User State
 const u = tg.initDataUnsafe.user;
@@ -38,10 +42,17 @@ let selectedGiftType = null;
 let isXrayActive = false;
 let lastGameData = null;
 
+// Chat State
+let loadedChats = [];
+let currentChatId = null;
+let chatPollingInterval = null;
+
 // UI Elements
 const screenLobby = document.getElementById('screen-lobby');
 const screenSearch = document.getElementById('screen-search');
 const screenGame = document.getElementById('screen-game');
+const screenChatList = document.getElementById('screen-chat-list');
+const screenChatRoom = document.getElementById('screen-chat-room');
 const gridContainer = document.getElementById('table-grid');
 const svgLayer = document.getElementById('connections-layer');
 const profileModal = document.getElementById('profile-modal');
@@ -57,6 +68,21 @@ const GIFT_DESCRIPTIONS = {
 
 // --- NAVIGATION ---
 
+function switchScreen(screenName) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    
+    if (screenName === 'lobby') {
+        screenLobby.classList.add('active');
+        document.querySelector('.nav-item:nth-child(1)').classList.add('active');
+    } else if (screenName === 'chatList') {
+        screenChatList.classList.add('active');
+        document.querySelector('.nav-item:nth-child(2)').classList.add('active');
+    } else if (screenName === 'chatRoom') {
+        screenChatRoom.classList.add('active');
+    }
+}
+
 function forceExit() {
     console.log('Force Exit Triggered');
     if (searchInterval) clearInterval(searchInterval);
@@ -64,7 +90,7 @@ function forceExit() {
     
     screenGame.classList.remove('active');
     screenSearch.classList.remove('active');
-    screenLobby.classList.add('active');
+    switchScreen('lobby');
     
     currentPhase = "";
     currentPlayerId = null;
@@ -424,4 +450,180 @@ function drawConnectionLines(votes, matches) {
             svgLayer.appendChild(line);
         }
     }
+}
+
+// --- CHAT SYSTEM LOGIC ---
+
+async function loadChatList(filter = 'active') {
+    if (chatPollingInterval) clearInterval(chatPollingInterval);
+    switchScreen('chatList');
+    
+    // Update Tabs UI
+    document.getElementById('tab-active').classList.toggle('active', filter === 'active');
+    document.getElementById('tab-archive').classList.toggle('active', filter === 'archived');
+    
+    const container = document.getElementById('chat-list-container');
+    container.innerHTML = '<div class="spinner" style="margin: 20px auto;"></div>';
+
+    try {
+        const res = await fetch(CHAT_LIST_URL, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ user_id: USER_ID })
+        });
+        const data = await res.json();
+        
+        if (data.status === 'success') {
+            loadedChats = data.chats;
+            renderChatList(filter);
+        }
+    } catch (e) { console.error(e); }
+}
+
+function renderChatList(filter) {
+    const container = document.getElementById('chat-list-container');
+    container.innerHTML = '';
+    
+    const filtered = loadedChats.filter(c => c.status === filter);
+    
+    if (filtered.length === 0) {
+        container.innerHTML = `<div style="text-align:center; color:#555; margin-top:50px;">${filter === 'active' ? 'Нет активных чатов' : 'Архив пуст'}</div>`;
+        return;
+    }
+
+    filtered.forEach(chat => {
+        const div = document.createElement('div');
+        div.className = 'chat-item';
+        
+        let actionBtn = '';
+        if (filter === 'archived') {
+            actionBtn = `<button class="chat-restore-btn" onclick="event.stopPropagation(); restoreChat(${chat.id})">RESTORE 50 🪙</button>`;
+        }
+
+        // Use a default avatar if empty
+        const avatarUrl = chat.partner_photo || 'https://via.placeholder.com/50/000000/FFFFFF/?text=?';
+
+        div.innerHTML = `
+            <div class="chat-avatar" style="background-image: url('${avatarUrl}')"></div>
+            <div class="chat-info">
+                <div class="chat-name">${chat.partner_name}</div>
+                <div class="chat-preview">${chat.preview}</div>
+            </div>
+            ${actionBtn}
+        `;
+        
+        if (filter === 'active') {
+            div.onclick = () => openChat(chat.id, chat.partner_name, avatarUrl);
+        }
+        
+        container.appendChild(div);
+    });
+}
+
+async function restoreChat(chatId) {
+    if (!confirm("Восстановить чат за 50 монет?")) return;
+    
+    try {
+        const res = await fetch(CHAT_RESTORE_URL, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ user_id: USER_ID, chat_id: chatId })
+        });
+        const data = await res.json();
+        
+        if (data.status === 'success') {
+            document.getElementById('user-balance').innerText = data.new_balance + ' 🪙';
+            loadChatList('active'); // Switch to active tab
+        } else {
+            alert(data.msg === 'No money' ? "Недостаточно монет!" : "Ошибка");
+        }
+    } catch (e) { console.error(e); }
+}
+
+async function openChat(chatId, name, photo) {
+    currentChatId = chatId;
+    switchScreen('chatRoom');
+    
+    // Setup Header
+    document.getElementById('chat-room-name').innerText = name;
+    document.getElementById('chat-room-avatar').style.backgroundImage = `url('${photo}')`;
+    document.getElementById('chat-room-avatar').onclick = () => openProfileModal(photo);
+    document.getElementById('chat-room-name').onclick = () => openProfileModal(photo);
+    
+    // Initial Load
+    await fetchMessages();
+    
+    // Start Polling
+    if (chatPollingInterval) clearInterval(chatPollingInterval);
+    chatPollingInterval = setInterval(fetchMessages, 3000);
+}
+
+async function fetchMessages() {
+    if (!currentChatId) return;
+    
+    try {
+        const res = await fetch(CHAT_HISTORY_URL, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ user_id: USER_ID, chat_id: currentChatId })
+        });
+        const data = await res.json();
+        
+        if (data.status === 'success') {
+            renderMessages(data.messages);
+        }
+    } catch (e) { console.error(e); }
+}
+
+function renderMessages(messages) {
+    const area = document.getElementById('chat-messages-area');
+    // Simple diff check could be added here for performance, but full redraw is safer for MVP
+    area.innerHTML = '';
+    
+    messages.forEach(m => {
+        const div = document.createElement('div');
+        
+        if (m.type === 'system') {
+            div.className = 'msg-bubble msg-system';
+            div.innerText = m.text;
+        } else {
+            const isMe = m.sender_id === USER_ID;
+            div.className = `msg-bubble ${isMe ? 'msg-right' : 'msg-left'}`;
+            
+            const date = new Date(m.timestamp * 1000);
+            const timeStr = date.getHours().toString().padStart(2,'0') + ':' + date.getMinutes().toString().padStart(2,'0');
+            
+            div.innerHTML = `
+                ${m.text}
+                <span class="msg-time">${timeStr}</span>
+            `;
+        }
+        area.appendChild(div);
+    });
+    
+    // Auto scroll to bottom
+    area.scrollTop = area.scrollHeight;
+}
+
+async function sendMessage() {
+    const input = document.getElementById('chat-input');
+    const text = input.value.trim();
+    if (!text || !currentChatId) return;
+    
+    input.value = ''; // Clear immediately
+    
+    try {
+        const res = await fetch(CHAT_SEND_URL, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ user_id: USER_ID, chat_id: currentChatId, text: text })
+        });
+        const data = await res.json();
+        
+        if (data.status === 'success') {
+            fetchMessages(); // Refresh immediately
+        } else {
+            alert(data.msg || "Ошибка отправки");
+        }
+    } catch (e) { console.error(e); }
 }
