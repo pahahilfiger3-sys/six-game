@@ -23,7 +23,7 @@
             <div class="bottom-nav">
                 <div class="nav-item active" onclick="switchScreen('lobby')">🏠</div>
                 <div class="nav-item" onclick="loadChatList()">💬</div>
-                <div class="nav-item">🛍</div>
+                <div class="nav-item" onclick="switchScreen('shop')">🛍</div>
                 <div class="nav-item" onclick="loadProfile()">👤</div>
             </div>
         </div>
@@ -112,7 +112,7 @@
             <div class="chat-header">
                 <div class="chat-back-btn" onclick="switchScreen('lobby')">⬅</div>
                 <div>MESSAGES</div>
-                <div style="font-size: 20px;">ℹ️</div>
+                <div style="font-size: 20px; cursor: pointer;" onclick="switchScreen('rules')">ℹ️</div>
             </div>
             <div class="chat-tabs">
                 <div class="chat-tab active" id="tab-active" onclick="renderChatList('active')">ACTIVE</div>
@@ -129,7 +129,7 @@
                 <div class="chat-back-btn" onclick="loadChatList()">⬅</div>
                 <div class="chat-room-avatar" id="chat-room-avatar"></div>
                 <div class="chat-room-name" id="chat-room-name">Name</div>
-                <div class="chat-report-btn">⚠️</div>
+                <div class="chat-report-btn" onclick="reportUser()">⚠️</div>
             </div>
             <div class="chat-messages-area" id="chat-messages-area">
                 <!-- Messages injected here -->
@@ -186,6 +186,54 @@
 
                     <button class="save-btn" onclick="saveProfile()">SAVE CHANGES</button>
                 </div>
+            </div>
+        </div>
+
+        <!-- SHOP SCREEN -->
+        <div id="screen-shop" class="screen">
+            <div class="chat-header">
+                <div class="chat-back-btn" onclick="switchScreen('lobby')">⬅</div>
+                <div>SHOP</div>
+                <div style="font-size: 20px;">💎</div>
+            </div>
+            <div class="shop-container">
+                <div class="shop-card">
+                    <div class="shop-title">INVITE FRIEND</div>
+                    <div class="shop-desc">
+                        Пригласи друга и получи <b>100 🪙</b>.<br>
+                        Друг получит <b>50 🪙</b>.
+                    </div>
+                    <button class="invite-btn" onclick="inviteFriend()">INVITE FRIEND</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- RULES SCREEN -->
+        <div id="screen-rules" class="screen">
+            <div class="chat-header">
+                <div class="chat-back-btn" onclick="loadChatList()">⬅</div>
+                <div>RULES</div>
+                <div style="font-size: 20px;">📜</div>
+            </div>
+            <div class="rules-container">
+                <ul class="rules-list">
+                    <li class="rule-item">
+                        <span class="rule-title">1. CHAT BURNOUT</span>
+                        Чаты удаляются автоматически, если в них нет активности 24 часа.
+                    </li>
+                    <li class="rule-item">
+                        <span class="rule-title">2. SAFETY FIRST</span>
+                        Обмен контактами (телефоны, юзернеймы) запрещен до 20 сообщений в чате.
+                    </li>
+                    <li class="rule-item">
+                        <span class="rule-title">3. RESPECT</span>
+                        Оскорбления, спам и агрессия запрещены. Бан выдается навсегда.
+                    </li>
+                    <li class="rule-item">
+                        <span class="rule-title">4. KARMA SYSTEM</span>
+                        Ложные жалобы (репорты) снижают вашу Карму. Низкая Карма = Меньше матчей.
+                    </li>
+                </ul>
             </div>
         </div>
 

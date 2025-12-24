@@ -605,3 +605,38 @@ body {
     box-shadow: 0 5px 20px rgba(184, 0, 255, 0.3);
 }
 .save-btn:active { transform: scale(0.98); }
+
+/* --- SHOP SCREEN --- */
+.shop-container {
+    flex-grow: 1; padding: 20px; display: flex; flex-direction: column; align-items: center;
+    background: radial-gradient(circle at 50% 30%, rgba(255, 215, 0, 0.1) 0%, transparent 60%);
+}
+.shop-card {
+    background: rgba(255,255,255,0.05); border: 1px solid var(--gold);
+    border-radius: 20px; padding: 20px; width: 100%; max-width: 350px;
+    text-align: center; box-shadow: 0 0 20px rgba(255, 215, 0, 0.2);
+    margin-top: 20px;
+}
+.shop-title { font-size: 22px; font-weight: 800; color: var(--gold); margin-bottom: 10px; }
+.shop-desc { font-size: 14px; color: #ccc; margin-bottom: 20px; line-height: 1.4; }
+.invite-btn {
+    background: var(--gold); color: black; border: none;
+    padding: 15px 30px; border-radius: 30px; font-weight: 900; font-size: 16px;
+    cursor: pointer; box-shadow: 0 0 15px var(--gold);
+    animation: pulse-gold 2s infinite;
+}
+
+/* --- RULES SCREEN --- */
+.rules-container {
+    flex-grow: 1; padding: 20px; overflow-y: auto;
+}
+.rules-list {
+    list-style: none; padding: 0; margin: 0;
+    display: flex; flex-direction: column; gap: 15px;
+}
+.rule-item {
+    background: rgba(0, 243, 255, 0.05); border-left: 4px solid var(--neon-blue);
+    padding: 15px; border-radius: 0 10px 10px 0;
+    font-size: 14px; line-height: 1.4;
+}
+.rule-title { font-weight: 800; color: var(--neon-blue); margin-bottom: 5px; display: block; }

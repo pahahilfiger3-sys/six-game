@@ -17,11 +17,13 @@ const CHAT_CHECK_URL = API_BASE + '/chat/check';
 const USER_GET_URL = API_BASE + '/user/get';
 const USER_UPDATE_URL = API_BASE + '/user/update';
 const SECOND_CHANCE_URL = API_BASE + '/match/second_chance';
+const REPORT_URL = API_BASE + '/report';
 
 // User State
 const u = tg.initDataUnsafe.user;
 let USER_ID, myName = "Игрок", myPhoto = "";
 let myGender = "male";
+const BOT_USERNAME = "TheSixAppBot"; // Replace with actual bot username if needed
 
 if (u && u.id) {
     USER_ID = u.id;
@@ -49,6 +51,7 @@ let lastGameData = null;
 // Chat State
 let loadedChats = [];
 let currentChatId = null;
+let currentChatPartnerId = null;
 let chatPollingInterval = null;
 
 // Profile State
@@ -61,6 +64,9 @@ const screenGame = document.getElementById('screen-game');
 const screenChatList = document.getElementById('screen-chat-list');
 const screenChatRoom = document.getElementById('screen-chat-room');
 const screenProfile = document.getElementById('screen-profile');
+const screenShop = document.getElementById('screen-shop');
+const screenRules = document.getElementById('screen-rules');
+
 const gridContainer = document.getElementById('table-grid');
 const svgLayer = document.getElementById('connections-layer');
 const profileModal = document.getElementById('profile-modal');
@@ -91,6 +97,11 @@ function switchScreen(screenName) {
     } else if (screenName === 'profile') {
         screenProfile.classList.add('active');
         document.querySelector('.nav-item:nth-child(4)').classList.add('active');
+    } else if (screenName === 'shop') {
+        screenShop.classList.add('active');
+        document.querySelector('.nav-item:nth-child(3)').classList.add('active');
+    } else if (screenName === 'rules') {
+        screenRules.classList.add('active');
     }
 }
 
@@ -134,6 +145,13 @@ async function startSearching() {
             });
             const data = await res.json();
             
+            if (data.status === 'error' && data.msg === 'BANNED') {
+                clearInterval(searchInterval);
+                alert("⛔️ ВЫ ЗАБАНЕНЫ!");
+                forceExit();
+                return;
+            }
+
             if (data.status === 'in_game') {
                 if (!screenGame.classList.contains('active')) {
                     screenSearch.classList.remove('active');
@@ -176,6 +194,8 @@ async function loadProfile() {
             
             // Update global vars
             myName = u.name;
+        } else if (data.msg === 'BANNED') {
+            alert("⛔️ ВЫ ЗАБАНЕНЫ!");
         }
     } catch (e) { console.error(e); }
 }
@@ -608,7 +628,7 @@ function renderChatList(filter) {
         `;
         
         if (filter === 'active') {
-            div.onclick = () => openChat(chat.id, chat.partner_name, avatarUrl);
+            div.onclick = () => openChat(chat.id, chat.partner_name, avatarUrl, chat.partner_id);
         }
         
         container.appendChild(div);
@@ -635,8 +655,9 @@ async function restoreChat(chatId) {
     } catch (e) { console.error(e); }
 }
 
-async function openChat(chatId, name, photo) {
+async function openChat(chatId, name, photo, partnerId) {
     currentChatId = chatId;
+    currentChatPartnerId = partnerId;
     switchScreen('chatRoom');
     
     document.getElementById('chat-room-name').innerText = name;
@@ -736,7 +757,7 @@ async function buySecondChance(targetId, name, photo) {
             document.getElementById('user-balance').innerText = data.new_balance + ' 🪙';
             // Open chat immediately
             forceExit(); // Close game screen
-            openChat(data.chat_id, name, photo);
+            openChat(data.chat_id, name, photo, targetId);
         } else {
             alert(data.msg === 'No money' ? "Недостаточно монет!" : "Ошибка: " + data.msg);
         }
@@ -755,9 +776,42 @@ async function openChatWithUser(targetId, name, photo) {
 
         if (data.status === 'success') {
             forceExit(); // Close game screen
-            openChat(data.chat_id, name, photo);
+            openChat(data.chat_id, name, photo, targetId);
         } else {
             alert("Ошибка: Чат не найден");
+        }
+    } catch (e) { console.error(e); }
+}
+
+// --- REFERRAL & REPORTING ---
+
+function inviteFriend() {
+    const link = `https://t.me/${BOT_USERNAME}?start=${USER_ID}`;
+    tg.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(link)}&text=Play Six with me!`);
+}
+
+async function reportUser() {
+    if (!currentChatPartnerId) return;
+    
+    const reason = prompt("Причина жалобы (Спам, Оскорбления, 18+):");
+    if (!reason) return;
+
+    try {
+        const res = await fetch(REPORT_URL, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ 
+                user_id: USER_ID, 
+                target_id: currentChatPartnerId, 
+                reason: reason 
+            })
+        });
+        const data = await res.json();
+        
+        if (data.status === 'success') {
+            alert("Жалоба отправлена. Спасибо за бдительность!");
+        } else {
+            alert("Ошибка отправки жалобы.");
         }
     } catch (e) { console.error(e); }
 }
