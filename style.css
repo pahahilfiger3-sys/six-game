@@ -244,6 +244,35 @@ body {
     stroke-linejoin: round;
 }
 
+/* --- RESULT BUTTONS (NEW) --- */
+.result-action-btn {
+    position: absolute;
+    bottom: -15px; left: 50%; transform: translateX(-50%);
+    padding: 6px 12px; border-radius: 20px;
+    font-size: 10px; font-weight: 900;
+    border: none; cursor: pointer;
+    z-index: 200; white-space: nowrap;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+    text-transform: uppercase;
+}
+
+.btn-write {
+    background: var(--neon-green); color: black;
+    box-shadow: 0 0 15px var(--neon-green);
+}
+
+.btn-second-chance {
+    background: var(--gold); color: black;
+    box-shadow: 0 0 15px var(--gold);
+    animation: pulse-gold 1.5s infinite;
+}
+
+@keyframes pulse-gold {
+    0% { transform: translateX(-50%) scale(1); }
+    50% { transform: translateX(-50%) scale(1.1); box-shadow: 0 0 25px var(--gold); }
+    100% { transform: translateX(-50%) scale(1); }
+}
+
 /* --- TOAST --- */
 .gift-toast {
     position: absolute; bottom: 140px; left: 50%; transform: translateX(-50%);

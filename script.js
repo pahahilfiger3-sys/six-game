@@ -13,8 +13,10 @@ const CHAT_LIST_URL = API_BASE + '/chat/list';
 const CHAT_HISTORY_URL = API_BASE + '/chat/history';
 const CHAT_SEND_URL = API_BASE + '/chat/send';
 const CHAT_RESTORE_URL = API_BASE + '/chat/restore';
+const CHAT_CHECK_URL = API_BASE + '/chat/check';
 const USER_GET_URL = API_BASE + '/user/get';
 const USER_UPDATE_URL = API_BASE + '/user/update';
+const SECOND_CHANCE_URL = API_BASE + '/match/second_chance';
 
 // User State
 const u = tg.initDataUnsafe.user;
@@ -298,12 +300,28 @@ function renderPlayers(players, phase) {
         
         const badgePosClass = isLeftTeam ? 'pos-right' : 'pos-left';
 
+        // --- RESULTS BUTTONS LOGIC ---
+        let actionButtonHtml = '';
+        if (phase === 'results' && !isMe && lastVotesMap) {
+            const theyVotedForMe = lastVotesMap[p.id] === USER_ID;
+            const iVotedForThem = lastVotesMap[USER_ID] === p.id;
+            
+            if (theyVotedForMe && iVotedForThem) {
+                // Mutual Match -> Write Button
+                actionButtonHtml = `<button class="result-action-btn btn-write" onclick="event.stopPropagation(); openChatWithUser(${p.id}, '${p.name}', '${p.photo}')">💬 WRITE</button>`;
+            } else if (theyVotedForMe && !iVotedForThem) {
+                // Missed Opportunity -> Second Chance
+                actionButtonHtml = `<button class="result-action-btn btn-second-chance" onclick="event.stopPropagation(); buySecondChance(${p.id}, '${p.name}', '${p.photo}')">⚡️ 2ND CHANCE (100 🪙)</button>`;
+            }
+        }
+
         card.innerHTML = `
             <div class="avatar-wrapper">
                 <div class="avatar ${blurClass}" style="background-image:url('${p.photo || ''}')"></div>
                 <div class="status-check ${badgePosClass}" style="display:${p.has_answer ? 'flex' : 'none'}">
                     <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
                 </div>
+                ${actionButtonHtml}
             </div>
             <div class="name-tag" style="${isMe ? 'color:var(--neon-blue)' : ''}">${isMe ? 'ВЫ' : p.name}</div>
         `;
@@ -696,6 +714,50 @@ async function sendMessage() {
             fetchMessages(); 
         } else {
             alert(data.msg || "Ошибка отправки");
+        }
+    } catch (e) { console.error(e); }
+}
+
+// --- NEW FEATURES: SECOND CHANCE & INSTANT WRITE ---
+
+async function buySecondChance(targetId, name, photo) {
+    if (!confirm(`Использовать "Второй Шанс" за 100 монет? Это создаст чат с ${name}.`)) return;
+
+    try {
+        const res = await fetch(SECOND_CHANCE_URL, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ user_id: USER_ID, target_id: targetId })
+        });
+        const data = await res.json();
+
+        if (data.status === 'success') {
+            tg.HapticFeedback.notificationOccurred('success');
+            document.getElementById('user-balance').innerText = data.new_balance + ' 🪙';
+            // Open chat immediately
+            forceExit(); // Close game screen
+            openChat(data.chat_id, name, photo);
+        } else {
+            alert(data.msg === 'No money' ? "Недостаточно монет!" : "Ошибка: " + data.msg);
+        }
+    } catch (e) { console.error(e); }
+}
+
+async function openChatWithUser(targetId, name, photo) {
+    // We need to find the chat ID first
+    try {
+        const res = await fetch(CHAT_CHECK_URL, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ user_id: USER_ID, target_id: targetId })
+        });
+        const data = await res.json();
+
+        if (data.status === 'success') {
+            forceExit(); // Close game screen
+            openChat(data.chat_id, name, photo);
+        } else {
+            alert("Ошибка: Чат не найден");
         }
     } catch (e) { console.error(e); }
 }
