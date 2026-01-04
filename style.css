@@ -620,6 +620,7 @@ body {
 .shop-title { font-size: 22px; font-weight: 800; color: var(--gold); margin-bottom: 10px; }
 .shop-desc { font-size: 14px; color: #ccc; margin-bottom: 20px; line-height: 1.4; }
 .invite-btn {
+    display: block; margin: 20px auto;
     background: var(--gold); color: black; border: none;
     padding: 15px 30px; border-radius: 30px; font-weight: 900; font-size: 16px;
     cursor: pointer; box-shadow: 0 0 15px var(--gold);
