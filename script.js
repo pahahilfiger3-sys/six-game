@@ -518,11 +518,6 @@ function activateSpotlight(player) {
     const pBox = document.getElementById('player-box-content');
     pBox.style.display = 'flex';
 
-    // Add playing class to card for visualizer
-    document.querySelectorAll('.player-card').forEach(c => c.classList.remove('playing'));
-    const card = document.getElementById(`player-${player.id}`);
-    if (card) card.classList.add('playing');
-
     if (player.answer_type === 'audio') {
         pBox.innerHTML = `<div class="play-btn" onclick="stopPlayback()">⏸</div><div class="wave-visual"><div class="wave-fill"></div></div>`;
         currentAudio = new Audio(player.answer_content);
@@ -538,7 +533,6 @@ function stopPlayback() {
     currentPlayerId = null;
     document.getElementById('player-box-content').style.display = 'none';
     document.getElementById('q-box-content').style.display = 'block';
-    document.querySelectorAll('.player-card').forEach(c => c.classList.remove('playing'));
 }
 
 // --- MIC ---
@@ -858,30 +852,3 @@ async function reportUser() {
         }
     } catch (e) { console.error(e); }
 }
-
-// --- PARTICLES GENERATOR ---
-function initParticles() {
-    const container = document.getElementById('app-container');
-    for (let i = 0; i < 30; i++) {
-        const p = document.createElement('div');
-        p.className = 'particle';
-        
-        const size = Math.random() * 3 + 1;
-        const left = Math.random() * 100;
-        const duration = Math.random() * 10 + 5;
-        const delay = Math.random() * 5;
-        const opacity = Math.random() * 0.4 + 0.1;
-        
-        p.style.width = `${size}px`;
-        p.style.height = `${size}px`;
-        p.style.left = `${left}%`;
-        p.style.top = `${Math.random() * 100}%`;
-        p.style.setProperty('--p-opacity', opacity);
-        p.style.animation = `floatUp ${duration}s linear ${delay}s infinite`;
-        
-        container.appendChild(p);
-    }
-}
-
-// Init
-initParticles();
