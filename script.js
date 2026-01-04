@@ -61,6 +61,7 @@ let tempGender = "male";
 const screenLobby = document.getElementById('screen-lobby');
 const screenSearch = document.getElementById('screen-search');
 const screenGame = document.getElementById('screen-game');
+const screenProcessing = document.getElementById('screen-processing');
 const screenChatList = document.getElementById('screen-chat-list');
 const screenChatRoom = document.getElementById('screen-chat-room');
 const screenProfile = document.getElementById('screen-profile');
@@ -102,6 +103,10 @@ function switchScreen(screenName) {
         document.querySelector('.nav-item:nth-child(3)').classList.add('active');
     } else if (screenName === 'rules') {
         screenRules.classList.add('active');
+    } else if (screenName === 'game') {
+        screenGame.classList.add('active');
+    } else if (screenName === 'processing') {
+        screenProcessing.classList.add('active');
     }
 }
 
@@ -112,6 +117,7 @@ function forceExit() {
     
     screenGame.classList.remove('active');
     screenSearch.classList.remove('active');
+    screenProcessing.classList.remove('active');
     switchScreen('lobby');
     
     currentPhase = "";
@@ -153,10 +159,6 @@ async function startSearching() {
             }
 
             if (data.status === 'in_game') {
-                if (!screenGame.classList.contains('active')) {
-                    screenSearch.classList.remove('active');
-                    screenGame.classList.add('active');
-                }
                 updateGame(data);
             }
             if (data.status === 'in_game' && data.phase === 'results' && data.time_left <= 0) {
@@ -249,6 +251,32 @@ async function saveProfile() {
 
 function updateGame(data) {
     lastGameData = data;
+
+    // Handle Processing Phase Screen Switch
+    if (data.phase === 'processing') {
+        if (!screenProcessing.classList.contains('active')) {
+            screenSearch.classList.remove('active');
+            screenGame.classList.remove('active');
+            switchScreen('processing');
+        }
+        // Do not update game UI while processing
+        if (currentPhase !== data.phase) {
+            currentPhase = data.phase;
+            handlePhaseChange(data.phase);
+        }
+        return;
+    } else {
+        // If we are in processing screen but phase is NOT processing, switch back to game
+        if (screenProcessing.classList.contains('active')) {
+            switchScreen('game');
+        }
+        // If we are in search, switch to game
+        if (screenSearch.classList.contains('active')) {
+            screenSearch.classList.remove('active');
+            switchScreen('game');
+        }
+    }
+
     document.getElementById('game-timer').innerText = `00:${data.time_left < 10 ? '0'+data.time_left : data.time_left}`;
     document.getElementById('q-text-val').innerText = data.question;
     document.querySelector('.q-label').innerText = 'РАУНД ' + data.round;
@@ -277,7 +305,7 @@ function handlePhaseChange(phase) {
         document.getElementById('player-box-content').style.display = 'none';
         document.getElementById('q-box-content').style.display = 'block';
     } else {
-        // Force stop recording if active
+        // Force stop recording if active (Processing, Listening, Voting, Results)
         if (isRecording) {
             isRecording = false;
             document.getElementById('mic-btn').classList.remove('recording');
