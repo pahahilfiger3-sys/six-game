@@ -277,6 +277,12 @@ function handlePhaseChange(phase) {
         document.getElementById('player-box-content').style.display = 'none';
         document.getElementById('q-box-content').style.display = 'block';
     } else {
+        // Force stop recording if active
+        if (isRecording) {
+            isRecording = false;
+            document.getElementById('mic-btn').classList.remove('recording');
+            if(mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
+        }
         btns.forEach(b => b.classList.add('disabled'));
     }
 
@@ -335,10 +341,13 @@ function renderPlayers(players, phase) {
             }
         }
 
+        // Hide checkmark in voting/results
+        const showCheck = p.has_answer && phase !== 'voting' && phase !== 'results';
+
         card.innerHTML = `
             <div class="avatar-wrapper">
                 <div class="avatar ${blurClass}" style="background-image:url('${p.photo || ''}')"></div>
-                <div class="status-check ${badgePosClass}" style="display:${p.has_answer ? 'flex' : 'none'}">
+                <div class="status-check ${badgePosClass}" style="display:${showCheck ? 'flex' : 'none'}">
                     <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
                 </div>
                 ${actionButtonHtml}
