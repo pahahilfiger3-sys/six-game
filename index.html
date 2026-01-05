@@ -89,7 +89,7 @@
                         <span class="gift-price">25</span>
                     </div>
                     <div class="gift-btn" onclick="selectGift('joker')">
-                        <svg class="gift-icon" viewBox="0 0 24 24" style="fill:#bd00ff;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm3.5-9c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5S9.33 8 8.5 8 7 8.67 7 9.5 7.67 11 8.5 11zm3.5 6.5c2.33 0 4.31-1.46 5.11-3.5H6.89c.8 2.04 2.78 3.5 5.11 3.5z"/></svg>
+                        <svg class="gift-icon" viewBox="0 0 24 24" style="fill:#bd00ff;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm3.5-9c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5S9.33 8 8.5 8 7 8.67 7 9.5 7.67 11 8.5 11zm3.5 6.5c2.33 0 4.31-1.46 5.11-3.5H6.89c.8 2.04 2.78 3.5 5.11 3.5z"/></svg>
                         <span class="gift-price">50</span>
                     </div>
                 </div>
@@ -144,10 +144,28 @@
                 <!-- Messages injected here -->
             </div>
             <div class="chat-input-area">
+                <button class="chat-action-btn" onclick="sendGameInvite()">🔥</button>
                 <input type="text" class="chat-input" id="chat-input" placeholder="Сообщение...">
                 <button class="chat-send-btn" onclick="sendMessage()">
                     <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
                 </button>
+            </div>
+
+            <!-- NATIVE GAME BOTTOM SHEET -->
+            <div id="game-bottom-sheet">
+                <div class="game-sheet-header">
+                    <div class="game-lives" id="sync-lives">❤️❤️❤️</div>
+                    <div class="game-round" id="sync-round">ROUND 1</div>
+                    <div class="game-close" onclick="closeGamePanel()">✖</div>
+                </div>
+                <div class="game-sheet-body">
+                    <div class="sync-question" id="sync-question-text">Loading...</div>
+                    <div class="sync-options">
+                        <button class="sync-opt-btn" id="sync-opt-1" onclick="submitSyncAnswer(1)">Option 1</button>
+                        <button class="sync-opt-btn" id="sync-opt-2" onclick="submitSyncAnswer(2)">Option 2</button>
+                    </div>
+                    <div class="sync-status" id="sync-status-text">Waiting for opponent...</div>
+                </div>
             </div>
         </div>
 

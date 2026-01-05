@@ -19,11 +19,17 @@ const USER_UPDATE_URL = API_BASE + '/user/update';
 const SECOND_CHANCE_URL = API_BASE + '/match/second_chance';
 const REPORT_URL = API_BASE + '/report';
 
+// SYNC GAME API
+const SYNC_START_URL = API_BASE + '/game/sync/start';
+const SYNC_ACCEPT_URL = API_BASE + '/game/sync/accept';
+const SYNC_STATE_URL = API_BASE + '/game/sync/state';
+const SYNC_ANSWER_URL = API_BASE + '/game/sync/answer';
+
 // User State
 const u = tg.initDataUnsafe.user;
 let USER_ID, myName = "Игрок", myPhoto = "";
 let myGender = "male";
-const BOT_USERNAME = "TheSixAppBot"; // Replace with actual bot username if needed
+const BOT_USERNAME = "TheSixAppBot"; 
 
 if (u && u.id) {
     USER_ID = u.id;
@@ -54,6 +60,10 @@ let currentChatId = null;
 let currentChatPartnerId = null;
 let chatPollingInterval = null;
 
+// Sync Game State
+let syncGameInterval = null;
+let isSyncPanelOpen = false;
+
 // Profile State
 let tempGender = "male";
 
@@ -73,6 +83,7 @@ const svgLayer = document.getElementById('connections-layer');
 const profileModal = document.getElementById('profile-modal');
 const profileImg = document.getElementById('profile-large-img');
 const giftToast = document.getElementById('gift-info-toast');
+const gameBottomSheet = document.getElementById('game-bottom-sheet');
 
 const GIFT_DESCRIPTIONS = {
     'heart': "❤️ ЛАЙК: Выразить симпатию",
@@ -111,7 +122,6 @@ function switchScreen(screenName) {
 }
 
 function forceExit() {
-    console.log('Force Exit Triggered');
     if (searchInterval) clearInterval(searchInterval);
     if (currentAudio) { currentAudio.pause(); currentAudio = null; }
     
@@ -194,7 +204,6 @@ async function loadProfile() {
             tempGender = u.gender;
             updateGenderToggleUI();
             
-            // Update global vars
             myName = u.name;
         } else if (data.msg === 'BANNED') {
             alert("⛔️ ВЫ ЗАБАНЕНЫ!");
@@ -252,25 +261,21 @@ async function saveProfile() {
 function updateGame(data) {
     lastGameData = data;
 
-    // Handle Processing Phase Screen Switch
     if (data.phase === 'processing') {
         if (!screenProcessing.classList.contains('active')) {
             screenSearch.classList.remove('active');
             screenGame.classList.remove('active');
             switchScreen('processing');
         }
-        // Do not update game UI while processing
         if (currentPhase !== data.phase) {
             currentPhase = data.phase;
             handlePhaseChange(data.phase);
         }
         return;
     } else {
-        // If we are in processing screen but phase is NOT processing, switch back to game
         if (screenProcessing.classList.contains('active')) {
             switchScreen('game');
         }
-        // If we are in search, switch to game
         if (screenSearch.classList.contains('active')) {
             screenSearch.classList.remove('active');
             switchScreen('game');
@@ -305,7 +310,6 @@ function handlePhaseChange(phase) {
         document.getElementById('player-box-content').style.display = 'none';
         document.getElementById('q-box-content').style.display = 'block';
     } else {
-        // Force stop recording if active (Processing, Listening, Voting, Results)
         if (isRecording) {
             isRecording = false;
             document.getElementById('mic-btn').classList.remove('recording');
@@ -342,7 +346,6 @@ function renderPlayers(players, phase) {
         if (phase === 'voting' && p.gender === myGender && !isMe) card.style.opacity = "0.3";
         if (currentPlayerId === p.id) card.classList.add('playing');
 
-        // BLUR & X-RAY LOGIC
         let blurClass = '';
         if (phase === 'results') {
             blurClass = ''; 
@@ -354,22 +357,18 @@ function renderPlayers(players, phase) {
         
         const badgePosClass = isLeftTeam ? 'pos-right' : 'pos-left';
 
-        // --- RESULTS BUTTONS LOGIC ---
         let actionButtonHtml = '';
         if (phase === 'results' && !isMe && lastVotesMap) {
             const theyVotedForMe = lastVotesMap[p.id] === USER_ID;
             const iVotedForThem = lastVotesMap[USER_ID] === p.id;
             
             if (theyVotedForMe && iVotedForThem) {
-                // Mutual Match -> Write Button
                 actionButtonHtml = `<button class="result-action-btn btn-write" onclick="event.stopPropagation(); openChatWithUser(${p.id}, '${p.name}', '${p.photo}')">💬 WRITE</button>`;
             } else if (theyVotedForMe && !iVotedForThem) {
-                // Missed Opportunity -> Second Chance
                 actionButtonHtml = `<button class="result-action-btn btn-second-chance" onclick="event.stopPropagation(); buySecondChance(${p.id}, '${p.name}', '${p.photo}')">⚡️ 2ND CHANCE (100 🪙)</button>`;
             }
         }
 
-        // Hide checkmark in voting/results
         const showCheck = p.has_answer && phase !== 'voting' && phase !== 'results';
 
         card.innerHTML = `
@@ -735,6 +734,22 @@ function renderMessages(messages) {
         if (m.type === 'system') {
             div.className = 'msg-bubble msg-system';
             div.innerText = m.text;
+        } else if (m.type === 'game_invite') {
+            div.className = 'msg-invite';
+            const isMe = m.sender_id === USER_ID;
+            
+            let btnHtml = '';
+            if (isMe) {
+                btnHtml = `<button class="invite-btn" disabled>WAITING...</button>`;
+            } else {
+                btnHtml = `<button class="invite-btn" onclick="acceptGame()">ACCEPT</button>`;
+            }
+            
+            div.innerHTML = `
+                <div class="invite-title">🔥 SYNC GAME</div>
+                <div class="invite-text">${isMe ? 'Вы пригласили сыграть' : 'Вас приглашают в игру'}</div>
+                ${btnHtml}
+            `;
         } else {
             const isMe = m.sender_id === USER_ID;
             div.className = `msg-bubble ${isMe ? 'msg-right' : 'msg-left'}`;
@@ -776,6 +791,138 @@ async function sendMessage() {
     } catch (e) { console.error(e); }
 }
 
+// --- SYNC GAME LOGIC ---
+
+async function sendGameInvite() {
+    if (!currentChatId) return;
+    try {
+        const res = await fetch(SYNC_START_URL, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ user_id: USER_ID, chat_id: currentChatId })
+        });
+        const data = await res.json();
+        if (data.status === 'success') {
+            fetchMessages();
+            openGamePanel();
+        } else {
+            alert(data.msg);
+        }
+    } catch (e) { console.error(e); }
+}
+
+async function acceptGame() {
+    if (!currentChatId) return;
+    try {
+        const res = await fetch(SYNC_ACCEPT_URL, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ user_id: USER_ID, chat_id: currentChatId })
+        });
+        const data = await res.json();
+        if (data.status === 'success') {
+            openGamePanel();
+        } else {
+            alert(data.msg);
+        }
+    } catch (e) { console.error(e); }
+}
+
+function openGamePanel() {
+    isSyncPanelOpen = true;
+    gameBottomSheet.classList.add('active');
+    if (syncGameInterval) clearInterval(syncGameInterval);
+    syncGameInterval = setInterval(pollSyncGame, 1000);
+    pollSyncGame(); // Immediate call
+}
+
+function closeGamePanel() {
+    isSyncPanelOpen = false;
+    gameBottomSheet.classList.remove('active');
+    if (syncGameInterval) clearInterval(syncGameInterval);
+}
+
+async function pollSyncGame() {
+    if (!currentChatId || !isSyncPanelOpen) return;
+    
+    try {
+        const res = await fetch(SYNC_STATE_URL, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ user_id: USER_ID, chat_id: currentChatId })
+        });
+        const data = await res.json();
+        
+        if (data.status === 'none') {
+            closeGamePanel();
+            return;
+        }
+        
+        // Update UI
+        let hearts = "";
+        for(let i=0; i<data.lives; i++) hearts += "❤️";
+        document.getElementById('sync-lives').innerText = hearts;
+        document.getElementById('sync-round').innerText = "ROUND " + data.round;
+        
+        const qText = document.getElementById('sync-question-text');
+        const btn1 = document.getElementById('sync-opt-1');
+        const btn2 = document.getElementById('sync-opt-2');
+        const statusText = document.getElementById('sync-status-text');
+        
+        if (data.status === 'game_over') {
+            qText.innerText = "GAME OVER";
+            btn1.style.display = 'none';
+            btn2.style.display = 'none';
+            statusText.innerText = "Lives depleted.";
+            return;
+        }
+        
+        if (data.status === 'waiting') {
+            qText.innerText = "Waiting for opponent...";
+            btn1.style.display = 'none';
+            btn2.style.display = 'none';
+            return;
+        }
+        
+        // Active Game
+        btn1.style.display = 'flex';
+        btn2.style.display = 'flex';
+        
+        if (data.question) {
+            qText.innerText = data.question.q;
+            btn1.innerText = data.question.o1;
+            btn2.innerText = data.question.o2;
+        }
+        
+        if (data.has_answered) {
+            btn1.disabled = true;
+            btn2.disabled = true;
+            btn1.style.opacity = 0.5;
+            btn2.style.opacity = 0.5;
+            statusText.innerText = data.waiting_for_opponent ? "Waiting for opponent..." : "Processing...";
+        } else {
+            btn1.disabled = false;
+            btn2.disabled = false;
+            btn1.style.opacity = 1;
+            btn2.style.opacity = 1;
+            statusText.innerText = "Choose wisely!";
+        }
+        
+    } catch (e) { console.error(e); }
+}
+
+async function submitSyncAnswer(option) {
+    try {
+        await fetch(SYNC_ANSWER_URL, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ user_id: USER_ID, chat_id: currentChatId, option: option })
+        });
+        tg.HapticFeedback.impactOccurred('medium');
+        pollSyncGame();
+    } catch (e) { console.error(e); }
+}
+
 // --- NEW FEATURES: SECOND CHANCE & INSTANT WRITE ---
 
 async function buySecondChance(targetId, name, photo) {
@@ -792,8 +939,7 @@ async function buySecondChance(targetId, name, photo) {
         if (data.status === 'success') {
             tg.HapticFeedback.notificationOccurred('success');
             document.getElementById('user-balance').innerText = data.new_balance + ' 🪙';
-            // Open chat immediately
-            forceExit(); // Close game screen
+            forceExit(); 
             openChat(data.chat_id, name, photo, targetId);
         } else {
             alert(data.msg === 'No money' ? "Недостаточно монет!" : "Ошибка: " + data.msg);
@@ -802,7 +948,6 @@ async function buySecondChance(targetId, name, photo) {
 }
 
 async function openChatWithUser(targetId, name, photo) {
-    // We need to find the chat ID first
     try {
         const res = await fetch(CHAT_CHECK_URL, {
             method: 'POST',
@@ -812,7 +957,7 @@ async function openChatWithUser(targetId, name, photo) {
         const data = await res.json();
 
         if (data.status === 'success') {
-            forceExit(); // Close game screen
+            forceExit(); 
             openChat(data.chat_id, name, photo, targetId);
         } else {
             alert("Ошибка: Чат не найден");
