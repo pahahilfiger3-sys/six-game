@@ -7,7 +7,7 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     
     <link rel="stylesheet" href="style.css"> 
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
 </head>
 <body>
 
@@ -18,7 +18,7 @@
                 <div class="logo">SIX</div>
                 <div class="online-tag">🟢 ONLINE</div>
                 <button class="big-btn" onclick="startSearching()">START</button>
-                <div style="margin-top: 30px; opacity: 0.6; font-size: 12px;">Баланс: <b id="user-balance">1000 🪙</b></div>
+                <div style="margin-top: 30px; opacity: 0.6; font-size: 14px; font-family: 'Orbitron', sans-serif;">Баланс: <b id="user-balance">1000 🪙</b></div>
             </div>
             <div class="bottom-nav">
                 <div class="nav-item active" onclick="switchScreen('lobby')">🏠</div>
@@ -32,12 +32,12 @@
         <div id="screen-search" class="screen">
             <div style="flex-grow:1; display:flex; flex-direction:column; align-items:center; justify-content:center;">
                 <div class="spinner"></div>
-                <div style="margin-top: 20px; font-weight: 600;">Ищем пару...</div>
-                <button onclick="forceExit()" style="margin-top:20px; border:1px solid #555; background:none; color:#777; padding: 10px 20px; border-radius: 8px;">ОТМЕНА</button>
+                <div style="margin-top: 20px; font-weight: 600; font-size: 18px;">Ищем пару...</div>
+                <button onclick="forceExit()" style="margin-top:20px; border:1px solid #555; background:none; color:#777; padding: 10px 20px; border-radius: 8px; font-family: 'Orbitron', sans-serif;">ОТМЕНА</button>
             </div>
         </div>
 
-        <!-- PROCESSING (NEW) -->
+        <!-- PROCESSING -->
         <div id="screen-processing" class="screen">
             <div class="processing-container">
                 <div class="neon-loader"></div>
@@ -57,11 +57,14 @@
                 <div class="q-content" id="q-box-content">
                     <div class="q-label">РАУНД 1</div>
                     <div class="q-text" id="q-text-val">Загрузка...</div>
+                    <div class="hint-text" id="hint-text">👆 TAP PLAYER TO LISTEN</div>
                 </div>
                 <div class="player-content" id="player-box-content" style="display:none;">
                     <div class="play-btn">▶️</div>
-                    <div class="wave-visual"><div class="wave-fill"></div></div>
-                    <div style="font-size:12px; font-weight:bold;">СЛУШАЕМ...</div>
+                    <div class="equalizer" id="audio-visualizer">
+                        <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
+                    </div>
+                    <div class="answer-text-display"></div>
                 </div>
             </div>
             

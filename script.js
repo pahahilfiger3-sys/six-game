@@ -305,16 +305,25 @@ function handlePhaseChange(phase) {
     const btns = document.querySelectorAll('.action-btn');
     resetSVG();
     
+    // Reset Spotlight UI
+    document.getElementById('hint-text').style.display = 'none';
+    document.getElementById('player-box-content').style.display = 'none';
+    document.getElementById('q-box-content').style.display = 'flex';
+
     if (phase === 'recording') {
         btns.forEach(b => b.classList.remove('disabled'));
-        document.getElementById('player-box-content').style.display = 'none';
-        document.getElementById('q-box-content').style.display = 'block';
-    } else {
+    } else if (phase === 'listening') {
         if (isRecording) {
             isRecording = false;
             document.getElementById('mic-btn').classList.remove('recording');
             if(mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
         }
+        btns.forEach(b => b.classList.add('disabled'));
+        
+        // Show Hint in Listening Phase
+        document.getElementById('hint-text').style.display = 'block';
+    } else {
+        // Voting, Results
         btns.forEach(b => b.classList.add('disabled'));
     }
 
@@ -344,7 +353,11 @@ function renderPlayers(players, phase) {
         card.id = `player-${p.id}`;
         
         if (phase === 'voting' && p.gender === myGender && !isMe) card.style.opacity = "0.3";
-        if (currentPlayerId === p.id) card.classList.add('playing');
+        
+        // Add playing class if this player is currently speaking
+        if (currentPlayerId === p.id) {
+            card.classList.add('playing');
+        }
 
         let blurClass = '';
         if (phase === 'results') {
@@ -513,25 +526,54 @@ function activateSpotlight(player) {
     if (currentAudio) currentAudio.pause();
 
     currentPlayerId = player.id;
-    document.getElementById('q-box-content').style.display = 'none';
+    
+    // UI Updates
+    document.getElementById('hint-text').style.display = 'none'; // Hide Hint
+    document.getElementById('q-box-content').style.display = 'none'; // Hide Question
+    
     const pBox = document.getElementById('player-box-content');
-    pBox.style.display = 'flex';
+    pBox.style.display = 'flex'; // Show Player Content
+
+    // Update Player Cards (Ripple Effect)
+    document.querySelectorAll('.player-card').forEach(c => c.classList.remove('playing'));
+    const card = document.getElementById(`player-${player.id}`);
+    if (card) card.classList.add('playing');
 
     if (player.answer_type === 'audio') {
-        pBox.innerHTML = `<div class="play-btn" onclick="stopPlayback()">⏸</div><div class="wave-visual"><div class="wave-fill"></div></div>`;
+        // Show Equalizer
+        document.querySelector('.equalizer').style.display = 'flex';
+        document.querySelector('.equalizer').classList.add('active');
+        document.querySelector('.answer-text-display').style.display = 'none';
+        
         currentAudio = new Audio(player.answer_content);
         currentAudio.play();
         currentAudio.onended = stopPlayback;
     } else {
-        pBox.innerHTML = `<div class="answer-text-display">"${player.answer_content}"</div>`;
+        // Show Text
+        document.querySelector('.equalizer').style.display = 'none';
+        document.querySelector('.equalizer').classList.remove('active');
+        const txtDisplay = document.querySelector('.answer-text-display');
+        txtDisplay.style.display = 'block';
+        txtDisplay.innerText = `"${player.answer_content}"`;
     }
 }
 
 function stopPlayback() {
     if (currentAudio) { currentAudio.pause(); currentAudio = null; }
     currentPlayerId = null;
+    
+    // UI Updates
     document.getElementById('player-box-content').style.display = 'none';
-    document.getElementById('q-box-content').style.display = 'block';
+    document.getElementById('q-box-content').style.display = 'flex';
+    
+    // Show Hint again if still in listening phase
+    if (currentPhase === 'listening') {
+        document.getElementById('hint-text').style.display = 'block';
+    }
+
+    // Remove Ripple
+    document.querySelectorAll('.player-card').forEach(c => c.classList.remove('playing'));
+    document.querySelector('.equalizer').classList.remove('active');
 }
 
 // --- MIC ---
