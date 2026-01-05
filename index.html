@@ -138,6 +138,7 @@
                 <div class="chat-back-btn" onclick="loadChatList()">⬅</div>
                 <div class="chat-room-avatar" id="chat-room-avatar"></div>
                 <div class="chat-room-name" id="chat-room-name">Name</div>
+                <div class="chat-sync-btn" onclick="startSyncGame()">🎮</div>
                 <div class="chat-report-btn" onclick="reportUser()">⚠️</div>
             </div>
             <div class="chat-messages-area" id="chat-messages-area">
@@ -148,6 +149,42 @@
                 <button class="chat-send-btn" onclick="sendMessage()">
                     <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
                 </button>
+            </div>
+        </div>
+
+        <!-- SYNC GAME SCREEN -->
+        <div id="screen-sync-game" class="screen">
+            <div class="sync-container">
+                <div class="sync-header">
+                    <div class="nav-exit" onclick="exitSyncGame()">EXIT</div>
+                    <div class="sync-lives" id="sync-lives">
+                        <div class="heart">❤️</div><div class="heart">❤️</div><div class="heart">❤️</div>
+                    </div>
+                </div>
+
+                <div class="sync-card">
+                    <div class="sync-round-tag" id="sync-round">ROUND 1 / 10</div>
+                    <div class="sync-q-text" id="sync-q-text">Loading...</div>
+                </div>
+
+                <div class="sync-options" id="sync-options">
+                    <!-- Buttons injected here -->
+                </div>
+
+                <div class="sync-waiting" id="sync-waiting">
+                    <div class="spinner"></div>
+                    <div style="margin-top:10px; color:#888;">Waiting for partner...</div>
+                </div>
+
+                <!-- Game Over Overlay -->
+                <div class="sync-game-over-overlay" id="sync-game-over">
+                    <div class="glitch-text">GAME OVER</div>
+                    <div style="margin: 20px 0; color: #888;">Lives depleted</div>
+                    <button class="big-btn" style="width:180px; height:180px; font-size:20px;" onclick="reviveSyncGame()">
+                        REVIVE<br><span style="font-size:14px;">25 🪙</span>
+                    </button>
+                    <button onclick="exitSyncGame()" style="margin-top:20px; background:none; border:1px solid #555; color:#777; padding:10px 20px; border-radius:8px;">EXIT</button>
+                </div>
             </div>
         </div>
 
