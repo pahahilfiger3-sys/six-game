@@ -739,32 +739,32 @@ function renderMessages(messages) {
             const isMe = m.sender_id === USER_ID;
             
             let btnHtml = '';
+            // Логика: Если я отправил, но игра активна -> Кнопка "ВЕРНУТЬСЯ"
+            // Мы пока не знаем статус игры точно здесь, но сделаем кнопку "OPEN" всегда активной для теста
+            // Или проверим isSyncPanelOpen (локально)
+            
             if (isMe) {
-                btnHtml = `<button class="invite-btn" disabled>WAITING...</button>`;
+                // Если я создал, я тоже могу нажать чтобы открыть панель (если случайно закрыл)
+                btnHtml = `<button class="invite-btn" onclick="openGamePanel()">ВЕРНУТЬСЯ В ИГРУ</button>`;
             } else {
-                btnHtml = `<button class="invite-btn" onclick="acceptGame()">ACCEPT</button>`;
+                btnHtml = `<button class="invite-btn" onclick="acceptGame()">ИГРАТЬ</button>`;
             }
             
             div.innerHTML = `
                 <div class="invite-title">🔥 SYNC GAME</div>
-                <div class="invite-text">${isMe ? 'Вы пригласили сыграть' : 'Вас приглашают в игру'}</div>
+                <div class="invite-text">${isMe ? 'Ожидание партнера...' : 'Вас приглашают в игру'}</div>
                 ${btnHtml}
             `;
         } else {
+            // ... (старый код для обычных сообщений)
             const isMe = m.sender_id === USER_ID;
             div.className = `msg-bubble ${isMe ? 'msg-right' : 'msg-left'}`;
-            
             const date = new Date(m.timestamp * 1000);
             const timeStr = date.getHours().toString().padStart(2,'0') + ':' + date.getMinutes().toString().padStart(2,'0');
-            
-            div.innerHTML = `
-                ${m.text}
-                <span class="msg-time">${timeStr}</span>
-            `;
+            div.innerHTML = `${m.text}<span class="msg-time">${timeStr}</span>`;
         }
         area.appendChild(div);
     });
-    
     area.scrollTop = area.scrollHeight;
 }
 
@@ -858,54 +858,66 @@ async function pollSyncGame() {
             return;
         }
         
-        // Update UI
+        // Обновляем Жизни и Раунд
         let hearts = "";
         for(let i=0; i<data.lives; i++) hearts += "❤️";
         document.getElementById('sync-lives').innerText = hearts;
         document.getElementById('sync-round').innerText = "ROUND " + data.round;
         
         const qText = document.getElementById('sync-question-text');
-        const btn1 = document.getElementById('sync-opt-1');
-        const btn2 = document.getElementById('sync-opt-2');
+        const optionsContainer = document.querySelector('.sync-options'); // Используем класс
         const statusText = document.getElementById('sync-status-text');
         
+        // GAME OVER
         if (data.status === 'game_over') {
-            qText.innerText = "GAME OVER";
-            btn1.style.display = 'none';
-            btn2.style.display = 'none';
-            statusText.innerText = "Lives depleted.";
+            document.getElementById('sync-game-over').style.display = 'flex';
             return;
+        } else {
+            document.getElementById('sync-game-over').style.display = 'none';
         }
         
+        // WAITING
         if (data.status === 'waiting') {
-            qText.innerText = "Waiting for opponent...";
-            btn1.style.display = 'none';
-            btn2.style.display = 'none';
+            document.getElementById('sync-waiting').style.display = 'flex';
+            optionsContainer.style.display = 'none';
+            qText.innerText = "Ожидание партнера...";
             return;
+        } else {
+            document.getElementById('sync-waiting').style.display = 'none';
+            optionsContainer.style.display = 'flex';
         }
         
-        // Active Game
-        btn1.style.display = 'flex';
-        btn2.style.display = 'flex';
-        
+        // ACTIVE QUESTION
         if (data.question) {
             qText.innerText = data.question.q;
-            btn1.innerText = data.question.o1;
-            btn2.innerText = data.question.o2;
+            
+            // ОЧИЩАЕМ СТАРЫЕ КНОПКИ
+            const optionsContainer = document.querySelector('.sync-options');
+            optionsContainer.innerHTML = ''; 
+            
+            // ГЕНЕРИРУЕМ НОВЫЕ (СКОЛЬКО ЕСТЬ В JSON)
+            if (data.question.options && Array.isArray(data.question.options)) {
+                data.question.options.forEach((optText, idx) => {
+                    const btn = document.createElement('button');
+                    btn.className = 'sync-opt-btn';
+                    btn.innerText = optText;
+                    
+                    // Если уже ответил - блокируем
+                    if (data.has_answered) {
+                        btn.disabled = true;
+                        btn.style.opacity = "0.5";
+                    } else {
+                        btn.onclick = () => submitSyncAnswer(idx);
+                    }
+                    optionsContainer.appendChild(btn);
+                });
+            }
         }
         
         if (data.has_answered) {
-            btn1.disabled = true;
-            btn2.disabled = true;
-            btn1.style.opacity = 0.5;
-            btn2.style.opacity = 0.5;
-            statusText.innerText = data.waiting_for_opponent ? "Waiting for opponent..." : "Processing...";
+            statusText.innerText = data.waiting_for_opponent ? "Ждем партнера..." : "Обработка...";
         } else {
-            btn1.disabled = false;
-            btn2.disabled = false;
-            btn1.style.opacity = 1;
-            btn2.style.opacity = 1;
-            statusText.innerText = "Choose wisely!";
+            statusText.innerText = "Твой ход!";
         }
         
     } catch (e) { console.error(e); }
@@ -975,25 +987,33 @@ function inviteFriend() {
 async function reportUser() {
     if (!currentChatPartnerId) return;
     
-    const reason = prompt("Причина жалобы (Спам, Оскорбления, 18+):");
-    if (!reason) return;
-
-    try {
-        const res = await fetch(REPORT_URL, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ 
-                user_id: USER_ID, 
-                target_id: currentChatPartnerId, 
-                reason: reason 
-            })
-        });
-        const data = await res.json();
+    // Используем нативный попап Телеграма вместо prompt (работает везде)
+    tg.showPopup({
+        title: '⚠️ Жалоба',
+        message: 'Выберите причину жалобы:',
+        buttons: [
+            {id: 'spam', type: 'default', text: 'Спам'},
+            {id: 'insult', type: 'default', text: 'Оскорбления'},
+            {id: '18+', type: 'destructive', text: '18+ / Порно'},
+            {id: 'cancel', type: 'cancel'}
+        ]
+    }, async (btnId) => {
+        if (!btnId || btnId === 'cancel') return;
         
-        if (data.status === 'success') {
-            alert("Жалоба отправлена. Спасибо за бдительность!");
-        } else {
-            alert("Ошибка отправки жалобы.");
-        }
-    } catch (e) { console.error(e); }
+        try {
+            const res = await fetch(REPORT_URL, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ 
+                    user_id: USER_ID, 
+                    target_id: currentChatPartnerId, 
+                    reason: btnId // Отправляем ID кнопки как причину
+                })
+            });
+            const data = await res.json();
+            if (data.status === 'success') {
+                tg.showAlert("Жалоба отправлена.");
+            }
+        } catch (e) { console.error(e); }
+    });
 }
