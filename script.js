@@ -19,16 +19,11 @@ const USER_UPDATE_URL = API_BASE + '/user/update';
 const SECOND_CHANCE_URL = API_BASE + '/match/second_chance';
 const REPORT_URL = API_BASE + '/report';
 
-// SYNC GAME URLS
-const SYNC_START_URL = API_BASE + '/game/accept';
-const SYNC_ANSWER_URL = API_BASE + '/game/answer';
-const SYNC_REVIVE_URL = API_BASE + '/game/revive';
-const SYNC_STATE_URL = API_BASE + '/game/state';
-
 // User State
 const u = tg.initDataUnsafe.user;
 let USER_ID, myName = "Игрок", myPhoto = "";
 let myGender = "male";
+const BOT_USERNAME = "TheSixAppBot"; // Replace with actual bot username if needed
 
 if (u && u.id) {
     USER_ID = u.id;
@@ -59,9 +54,8 @@ let currentChatId = null;
 let currentChatPartnerId = null;
 let chatPollingInterval = null;
 
-// Sync Game State
-let syncPollingInterval = null;
-let syncLives = 3;
+// Profile State
+let tempGender = "male";
 
 // UI Elements
 const screenLobby = document.getElementById('screen-lobby');
@@ -73,13 +67,19 @@ const screenChatRoom = document.getElementById('screen-chat-room');
 const screenProfile = document.getElementById('screen-profile');
 const screenShop = document.getElementById('screen-shop');
 const screenRules = document.getElementById('screen-rules');
-const screenSync = document.getElementById('screen-sync-game');
 
 const gridContainer = document.getElementById('table-grid');
 const svgLayer = document.getElementById('connections-layer');
 const profileModal = document.getElementById('profile-modal');
 const profileImg = document.getElementById('profile-large-img');
 const giftToast = document.getElementById('gift-info-toast');
+
+const GIFT_DESCRIPTIONS = {
+    'heart': "❤️ ЛАЙК: Выразить симпатию",
+    'joker': "🃏 ДЖОКЕР: Сменить вопрос",
+    'spy': "👁 ШПИОН: Открыть фото",
+    'xray': "☢️ РЕНТГЕН: Увидеть всех"
+};
 
 // --- NAVIGATION ---
 
@@ -107,16 +107,17 @@ function switchScreen(screenName) {
         screenGame.classList.add('active');
     } else if (screenName === 'processing') {
         screenProcessing.classList.add('active');
-    } else if (screenName === 'sync') {
-        screenSync.classList.add('active');
     }
 }
 
 function forceExit() {
+    console.log('Force Exit Triggered');
     if (searchInterval) clearInterval(searchInterval);
-    if (syncPollingInterval) clearInterval(syncPollingInterval);
     if (currentAudio) { currentAudio.pause(); currentAudio = null; }
     
+    screenGame.classList.remove('active');
+    screenSearch.classList.remove('active');
+    screenProcessing.classList.remove('active');
     switchScreen('lobby');
     
     currentPhase = "";
@@ -165,331 +166,6 @@ async function startSearching() {
             }
         } catch (e) { console.error(e); }
     }, 1000);
-}
-
-// --- SYNC GAME LOGIC ---
-
-async function startSyncGame() {
-    if (!currentChatId) return;
-    
-    // Stop chat polling to avoid conflicts
-    if (chatPollingInterval) clearInterval(chatPollingInterval);
-    
-    switchScreen('sync');
-    document.getElementById('sync-game-over').style.display = 'none';
-    document.getElementById('sync-waiting').style.display = 'none';
-    
-    try {
-        const res = await fetch(SYNC_START_URL, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ user_id: USER_ID, chat_id: currentChatId })
-        });
-        const data = await res.json();
-        
-        if (data.status === 'active' || data.status === 'waiting') {
-            renderSyncGame(data);
-            startSyncPolling();
-        } else if (data.status === 'finished') {
-            alert("Игра завершена!");
-            exitSyncGame();
-        }
-    } catch (e) { console.error(e); exitSyncGame(); }
-}
-
-function startSyncPolling() {
-    if (syncPollingInterval) clearInterval(syncPollingInterval);
-    syncPollingInterval = setInterval(async () => {
-        try {
-            const res = await fetch(SYNC_STATE_URL, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ user_id: USER_ID, chat_id: currentChatId })
-            });
-            const data = await res.json();
-            
-            if (data.status === 'game_over') {
-                showSyncGameOver();
-            } else if (data.status === 'finished') {
-                alert("Игра пройдена! Поздравляем!");
-                exitSyncGame();
-            } else if (data.status === 'active' || data.status === 'waiting') {
-                renderSyncGame(data);
-            }
-        } catch (e) { console.error(e); }
-    }, 2000);
-}
-
-function renderSyncGame(data) {
-    syncLives = data.lives;
-    renderHearts(syncLives);
-    
-    document.getElementById('sync-round').innerText = `ROUND ${data.round || 1} / ${data.total_rounds || 10}`;
-    
-    if (data.status === 'waiting') {
-        document.getElementById('sync-waiting').style.display = 'flex';
-        document.getElementById('sync-options').style.display = 'none';
-        document.getElementById('sync-q-text').innerText = data.question.q;
-    } else {
-        document.getElementById('sync-waiting').style.display = 'none';
-        document.getElementById('sync-options').style.display = 'flex';
-        document.getElementById('sync-q-text').innerText = data.question.q;
-        
-        const optsContainer = document.getElementById('sync-options');
-        optsContainer.innerHTML = '';
-        data.question.options.forEach(opt => {
-            const btn = document.createElement('button');
-            btn.className = 'sync-opt-btn';
-            btn.innerText = opt;
-            btn.onclick = () => submitSyncAnswer(opt);
-            optsContainer.appendChild(btn);
-        });
-    }
-}
-
-function renderHearts(count) {
-    const container = document.getElementById('sync-lives');
-    container.innerHTML = '';
-    for (let i = 0; i < 3; i++) {
-        const heart = document.createElement('div');
-        heart.className = i < count ? 'heart' : 'heart lost';
-        heart.innerHTML = '❤️';
-        container.appendChild(heart);
-    }
-}
-
-async function submitSyncAnswer(answer) {
-    document.getElementById('sync-waiting').style.display = 'flex';
-    document.getElementById('sync-options').style.display = 'none';
-    
-    try {
-        const res = await fetch(SYNC_ANSWER_URL, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ user_id: USER_ID, chat_id: currentChatId, answer: answer })
-        });
-        const data = await res.json();
-        
-        if (data.status === 'round_result') {
-            // Show result animation
-            const resultOverlay = document.createElement('div');
-            resultOverlay.className = 'sync-result-overlay';
-            resultOverlay.innerHTML = data.match ? 
-                `<div style="color:#00ff88; font-size:40px; font-weight:900;">MATCH!</div>` : 
-                `<div style="color:#ff0055; font-size:40px; font-weight:900;">MISMATCH</div>`;
-            document.getElementById('screen-sync-game').appendChild(resultOverlay);
-            
-            setTimeout(() => {
-                resultOverlay.remove();
-                if (data.lives <= 0) showSyncGameOver();
-                else renderSyncGame({ ...data, status: 'active', question: { q: "Loading...", options: [] } }); // Placeholder until poll updates
-            }, 1500);
-        } else if (data.status === 'game_over') {
-            showSyncGameOver();
-        }
-    } catch (e) { console.error(e); }
-}
-
-function showSyncGameOver() {
-    document.getElementById('sync-game-over').style.display = 'flex';
-    if (syncPollingInterval) clearInterval(syncPollingInterval);
-}
-
-async function reviveSyncGame() {
-    try {
-        const res = await fetch(SYNC_REVIVE_URL, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ user_id: USER_ID, chat_id: currentChatId })
-        });
-        const data = await res.json();
-        
-        if (data.status === 'active') {
-            document.getElementById('sync-game-over').style.display = 'none';
-            document.getElementById('user-balance').innerText = data.new_balance + ' 🪙';
-            renderSyncGame(data);
-            startSyncPolling();
-        } else {
-            alert(data.msg || "Ошибка");
-        }
-    } catch (e) { console.error(e); }
-}
-
-function exitSyncGame() {
-    if (syncPollingInterval) clearInterval(syncPollingInterval);
-    switchScreen('chatRoom');
-    // Resume chat polling
-    chatPollingInterval = setInterval(fetchMessages, 3000);
-}
-
-// --- CHAT SYSTEM LOGIC ---
-
-async function loadChatList(filter = 'active') {
-    if (chatPollingInterval) clearInterval(chatPollingInterval);
-    switchScreen('chatList');
-    
-    document.getElementById('tab-active').classList.toggle('active', filter === 'active');
-    document.getElementById('tab-archive').classList.toggle('active', filter === 'archived');
-    
-    const container = document.getElementById('chat-list-container');
-    container.innerHTML = '<div class="spinner" style="margin: 20px auto;"></div>';
-
-    try {
-        const res = await fetch(CHAT_LIST_URL, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ user_id: USER_ID })
-        });
-        const data = await res.json();
-        
-        if (data.status === 'success') {
-            loadedChats = data.chats;
-            renderChatList(filter);
-        }
-    } catch (e) { console.error(e); }
-}
-
-function renderChatList(filter) {
-    const container = document.getElementById('chat-list-container');
-    container.innerHTML = '';
-    
-    const filtered = loadedChats.filter(c => c.status === filter);
-    
-    if (filtered.length === 0) {
-        container.innerHTML = `<div style="text-align:center; color:#555; margin-top:50px;">${filter === 'active' ? 'Нет активных чатов' : 'Архив пуст'}</div>`;
-        return;
-    }
-
-    filtered.forEach(chat => {
-        const div = document.createElement('div');
-        div.className = 'chat-item';
-        
-        let actionBtn = '';
-        if (filter === 'archived') {
-            actionBtn = `<button class="chat-restore-btn" onclick="event.stopPropagation(); restoreChat(${chat.id})">RESTORE 50 🪙</button>`;
-        }
-
-        const avatarUrl = chat.partner_photo || 'https://via.placeholder.com/50/000000/FFFFFF/?text=?';
-
-        div.innerHTML = `
-            <div class="chat-avatar" style="background-image: url('${avatarUrl}')"></div>
-            <div class="chat-info">
-                <div class="chat-name">${chat.partner_name}</div>
-                <div class="chat-preview">${chat.preview}</div>
-            </div>
-            ${actionBtn}
-        `;
-        
-        if (filter === 'active') {
-            div.onclick = () => openChat(chat.id, chat.partner_name, avatarUrl, chat.partner_id);
-        }
-        
-        container.appendChild(div);
-    });
-}
-
-async function restoreChat(chatId) {
-    if (!confirm("Восстановить чат за 50 монет?")) return;
-    
-    try {
-        const res = await fetch(CHAT_RESTORE_URL, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ user_id: USER_ID, chat_id: chatId })
-        });
-        const data = await res.json();
-        
-        if (data.status === 'success') {
-            document.getElementById('user-balance').innerText = data.new_balance + ' 🪙';
-            loadChatList('active'); 
-        } else {
-            alert(data.msg === 'No money' ? "Недостаточно монет!" : "Ошибка");
-        }
-    } catch (e) { console.error(e); }
-}
-
-async function openChat(chatId, name, photo, partnerId) {
-    currentChatId = chatId;
-    currentChatPartnerId = partnerId;
-    switchScreen('chatRoom');
-    
-    document.getElementById('chat-room-name').innerText = name;
-    document.getElementById('chat-room-avatar').style.backgroundImage = `url('${photo}')`;
-    document.getElementById('chat-room-avatar').onclick = () => openProfileModal(photo);
-    document.getElementById('chat-room-name').onclick = () => openProfileModal(photo);
-    
-    await fetchMessages();
-    
-    if (chatPollingInterval) clearInterval(chatPollingInterval);
-    chatPollingInterval = setInterval(fetchMessages, 3000);
-}
-
-async function fetchMessages() {
-    if (!currentChatId) return;
-    
-    try {
-        const res = await fetch(CHAT_HISTORY_URL, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ user_id: USER_ID, chat_id: currentChatId })
-        });
-        const data = await res.json();
-        
-        if (data.status === 'success') {
-            renderMessages(data.messages);
-        }
-    } catch (e) { console.error(e); }
-}
-
-function renderMessages(messages) {
-    const area = document.getElementById('chat-messages-area');
-    area.innerHTML = '';
-    
-    messages.forEach(m => {
-        const div = document.createElement('div');
-        
-        if (m.type === 'system') {
-            div.className = 'msg-bubble msg-system';
-            div.innerText = m.text;
-        } else {
-            const isMe = m.sender_id === USER_ID;
-            div.className = `msg-bubble ${isMe ? 'msg-right' : 'msg-left'}`;
-            
-            const date = new Date(m.timestamp * 1000);
-            const timeStr = date.getHours().toString().padStart(2,'0') + ':' + date.getMinutes().toString().padStart(2,'0');
-            
-            div.innerHTML = `
-                ${m.text}
-                <span class="msg-time">${timeStr}</span>
-            `;
-        }
-        area.appendChild(div);
-    });
-    
-    area.scrollTop = area.scrollHeight;
-}
-
-async function sendMessage() {
-    const input = document.getElementById('chat-input');
-    const text = input.value.trim();
-    if (!text || !currentChatId) return;
-    
-    input.value = ''; 
-    
-    try {
-        const res = await fetch(CHAT_SEND_URL, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ user_id: USER_ID, chat_id: currentChatId, text: text })
-        });
-        const data = await res.json();
-        
-        if (data.status === 'success') {
-            fetchMessages(); 
-        } else {
-            alert(data.msg || "Ошибка отправки");
-        }
-    } catch (e) { console.error(e); }
 }
 
 // --- PROFILE LOGIC ---
@@ -571,26 +247,30 @@ async function saveProfile() {
     } catch (e) { console.error(e); }
 }
 
-// --- GAME LOGIC (3x3) ---
+// --- GAME LOGIC ---
 
 function updateGame(data) {
     lastGameData = data;
 
+    // Handle Processing Phase Screen Switch
     if (data.phase === 'processing') {
         if (!screenProcessing.classList.contains('active')) {
             screenSearch.classList.remove('active');
             screenGame.classList.remove('active');
             switchScreen('processing');
         }
+        // Do not update game UI while processing
         if (currentPhase !== data.phase) {
             currentPhase = data.phase;
             handlePhaseChange(data.phase);
         }
         return;
     } else {
+        // If we are in processing screen but phase is NOT processing, switch back to game
         if (screenProcessing.classList.contains('active')) {
             switchScreen('game');
         }
+        // If we are in search, switch to game
         if (screenSearch.classList.contains('active')) {
             screenSearch.classList.remove('active');
             switchScreen('game');
@@ -625,6 +305,7 @@ function handlePhaseChange(phase) {
         document.getElementById('player-box-content').style.display = 'none';
         document.getElementById('q-box-content').style.display = 'block';
     } else {
+        // Force stop recording if active (Processing, Listening, Voting, Results)
         if (isRecording) {
             isRecording = false;
             document.getElementById('mic-btn').classList.remove('recording');
@@ -661,6 +342,7 @@ function renderPlayers(players, phase) {
         if (phase === 'voting' && p.gender === myGender && !isMe) card.style.opacity = "0.3";
         if (currentPlayerId === p.id) card.classList.add('playing');
 
+        // BLUR & X-RAY LOGIC
         let blurClass = '';
         if (phase === 'results') {
             blurClass = ''; 
@@ -672,18 +354,22 @@ function renderPlayers(players, phase) {
         
         const badgePosClass = isLeftTeam ? 'pos-right' : 'pos-left';
 
+        // --- RESULTS BUTTONS LOGIC ---
         let actionButtonHtml = '';
         if (phase === 'results' && !isMe && lastVotesMap) {
             const theyVotedForMe = lastVotesMap[p.id] === USER_ID;
             const iVotedForThem = lastVotesMap[USER_ID] === p.id;
             
             if (theyVotedForMe && iVotedForThem) {
+                // Mutual Match -> Write Button
                 actionButtonHtml = `<button class="result-action-btn btn-write" onclick="event.stopPropagation(); openChatWithUser(${p.id}, '${p.name}', '${p.photo}')">💬 WRITE</button>`;
             } else if (theyVotedForMe && !iVotedForThem) {
+                // Missed Opportunity -> Second Chance
                 actionButtonHtml = `<button class="result-action-btn btn-second-chance" onclick="event.stopPropagation(); buySecondChance(${p.id}, '${p.name}', '${p.photo}')">⚡️ 2ND CHANCE (100 🪙)</button>`;
             }
         }
 
+        // Hide checkmark in voting/results
         const showCheck = p.has_answer && phase !== 'voting' && phase !== 'results';
 
         card.innerHTML = `
@@ -920,6 +606,176 @@ function drawConnectionLines(votes, matches) {
     }
 }
 
+// --- CHAT SYSTEM LOGIC ---
+
+async function loadChatList(filter = 'active') {
+    if (chatPollingInterval) clearInterval(chatPollingInterval);
+    switchScreen('chatList');
+    
+    document.getElementById('tab-active').classList.toggle('active', filter === 'active');
+    document.getElementById('tab-archive').classList.toggle('active', filter === 'archived');
+    
+    const container = document.getElementById('chat-list-container');
+    container.innerHTML = '<div class="spinner" style="margin: 20px auto;"></div>';
+
+    try {
+        const res = await fetch(CHAT_LIST_URL, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ user_id: USER_ID })
+        });
+        const data = await res.json();
+        
+        if (data.status === 'success') {
+            loadedChats = data.chats;
+            renderChatList(filter);
+        }
+    } catch (e) { console.error(e); }
+}
+
+function renderChatList(filter) {
+    const container = document.getElementById('chat-list-container');
+    container.innerHTML = '';
+    
+    const filtered = loadedChats.filter(c => c.status === filter);
+    
+    if (filtered.length === 0) {
+        container.innerHTML = `<div style="text-align:center; color:#555; margin-top:50px;">${filter === 'active' ? 'Нет активных чатов' : 'Архив пуст'}</div>`;
+        return;
+    }
+
+    filtered.forEach(chat => {
+        const div = document.createElement('div');
+        div.className = 'chat-item';
+        
+        let actionBtn = '';
+        if (filter === 'archived') {
+            actionBtn = `<button class="chat-restore-btn" onclick="event.stopPropagation(); restoreChat(${chat.id})">RESTORE 50 🪙</button>`;
+        }
+
+        const avatarUrl = chat.partner_photo || 'https://via.placeholder.com/50/000000/FFFFFF/?text=?';
+
+        div.innerHTML = `
+            <div class="chat-avatar" style="background-image: url('${avatarUrl}')"></div>
+            <div class="chat-info">
+                <div class="chat-name">${chat.partner_name}</div>
+                <div class="chat-preview">${chat.preview}</div>
+            </div>
+            ${actionBtn}
+        `;
+        
+        if (filter === 'active') {
+            div.onclick = () => openChat(chat.id, chat.partner_name, avatarUrl, chat.partner_id);
+        }
+        
+        container.appendChild(div);
+    });
+}
+
+async function restoreChat(chatId) {
+    if (!confirm("Восстановить чат за 50 монет?")) return;
+    
+    try {
+        const res = await fetch(CHAT_RESTORE_URL, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ user_id: USER_ID, chat_id: chatId })
+        });
+        const data = await res.json();
+        
+        if (data.status === 'success') {
+            document.getElementById('user-balance').innerText = data.new_balance + ' 🪙';
+            loadChatList('active'); 
+        } else {
+            alert(data.msg === 'No money' ? "Недостаточно монет!" : "Ошибка");
+        }
+    } catch (e) { console.error(e); }
+}
+
+async function openChat(chatId, name, photo, partnerId) {
+    currentChatId = chatId;
+    currentChatPartnerId = partnerId;
+    switchScreen('chatRoom');
+    
+    document.getElementById('chat-room-name').innerText = name;
+    document.getElementById('chat-room-avatar').style.backgroundImage = `url('${photo}')`;
+    document.getElementById('chat-room-avatar').onclick = () => openProfileModal(photo);
+    document.getElementById('chat-room-name').onclick = () => openProfileModal(photo);
+    
+    await fetchMessages();
+    
+    if (chatPollingInterval) clearInterval(chatPollingInterval);
+    chatPollingInterval = setInterval(fetchMessages, 3000);
+}
+
+async function fetchMessages() {
+    if (!currentChatId) return;
+    
+    try {
+        const res = await fetch(CHAT_HISTORY_URL, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ user_id: USER_ID, chat_id: currentChatId })
+        });
+        const data = await res.json();
+        
+        if (data.status === 'success') {
+            renderMessages(data.messages);
+        }
+    } catch (e) { console.error(e); }
+}
+
+function renderMessages(messages) {
+    const area = document.getElementById('chat-messages-area');
+    area.innerHTML = '';
+    
+    messages.forEach(m => {
+        const div = document.createElement('div');
+        
+        if (m.type === 'system') {
+            div.className = 'msg-bubble msg-system';
+            div.innerText = m.text;
+        } else {
+            const isMe = m.sender_id === USER_ID;
+            div.className = `msg-bubble ${isMe ? 'msg-right' : 'msg-left'}`;
+            
+            const date = new Date(m.timestamp * 1000);
+            const timeStr = date.getHours().toString().padStart(2,'0') + ':' + date.getMinutes().toString().padStart(2,'0');
+            
+            div.innerHTML = `
+                ${m.text}
+                <span class="msg-time">${timeStr}</span>
+            `;
+        }
+        area.appendChild(div);
+    });
+    
+    area.scrollTop = area.scrollHeight;
+}
+
+async function sendMessage() {
+    const input = document.getElementById('chat-input');
+    const text = input.value.trim();
+    if (!text || !currentChatId) return;
+    
+    input.value = ''; 
+    
+    try {
+        const res = await fetch(CHAT_SEND_URL, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ user_id: USER_ID, chat_id: currentChatId, text: text })
+        });
+        const data = await res.json();
+        
+        if (data.status === 'success') {
+            fetchMessages(); 
+        } else {
+            alert(data.msg || "Ошибка отправки");
+        }
+    } catch (e) { console.error(e); }
+}
+
 // --- NEW FEATURES: SECOND CHANCE & INSTANT WRITE ---
 
 async function buySecondChance(targetId, name, photo) {
@@ -936,7 +792,8 @@ async function buySecondChance(targetId, name, photo) {
         if (data.status === 'success') {
             tg.HapticFeedback.notificationOccurred('success');
             document.getElementById('user-balance').innerText = data.new_balance + ' 🪙';
-            forceExit(); 
+            // Open chat immediately
+            forceExit(); // Close game screen
             openChat(data.chat_id, name, photo, targetId);
         } else {
             alert(data.msg === 'No money' ? "Недостаточно монет!" : "Ошибка: " + data.msg);
@@ -945,6 +802,7 @@ async function buySecondChance(targetId, name, photo) {
 }
 
 async function openChatWithUser(targetId, name, photo) {
+    // We need to find the chat ID first
     try {
         const res = await fetch(CHAT_CHECK_URL, {
             method: 'POST',
@@ -954,7 +812,7 @@ async function openChatWithUser(targetId, name, photo) {
         const data = await res.json();
 
         if (data.status === 'success') {
-            forceExit(); 
+            forceExit(); // Close game screen
             openChat(data.chat_id, name, photo, targetId);
         } else {
             alert("Ошибка: Чат не найден");
