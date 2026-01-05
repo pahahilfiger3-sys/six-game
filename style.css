@@ -561,51 +561,38 @@ body {
     font-size: 9px; opacity: 0.5; margin-top: 4px; text-align: right; display: block;
 }
 
-/* --- GAME INVITE CARD (FIXED) --- */
+/* --- GAME INVITE CARD --- */
 .msg-invite {
-    align-self: center; /* Центрирует саму карточку в ленте */
-    width: 85%;
-    max-width: 280px;
-    background: rgba(10, 10, 16, 0.95);
+    align-self: center;
+    width: 80%;
+    background: rgba(0,0,0,0.8);
     border: 1px solid var(--gold);
-    border-radius: 16px;
-    padding: 20px 15px;
+    border-radius: 12px;
+    padding: 15px;
+    text-align: center;
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.2);
+    margin: 10px 0;
+    /* FIX: Centering */
     display: flex;
     flex-direction: column;
-    align-items: center; /* Центрирует текст и кнопку внутри */
-    justify-content: center;
-    box-shadow: 0 0 20px rgba(255, 215, 0, 0.15);
-    margin: 15px auto; /* auto по бокам для гарантии */
+    align-items: center;
 }
-
 .invite-title {
-    color: var(--gold); font-weight: 800; font-size: 16px; margin-bottom: 8px;
-    text-transform: uppercase; letter-spacing: 2px;
+    color: var(--gold); font-weight: 800; font-size: 14px; margin-bottom: 5px;
+    text-transform: uppercase; letter-spacing: 1px;
 }
-
-.invite-text { 
-    font-size: 13px; color: #ccc; margin-bottom: 20px; line-height: 1.4; 
-}
-
+.invite-text { font-size: 12px; color: #ccc; margin-bottom: 15px; }
 .invite-btn {
+    background: var(--gold); color: black; border: none;
+    padding: 8px 20px; border-radius: 20px; font-weight: 800;
+    cursor: pointer; text-transform: uppercase; font-size: 12px;
+    box-shadow: 0 0 10px var(--gold);
+    /* FIX: Sizing */
     width: 100%;
-    max-width: 180px;
-    background: var(--gold); 
-    color: black; 
-    border: none;
-    padding: 12px 0;
-    border-radius: 25px; 
-    font-weight: 800;
-    font-size: 13px;
-    cursor: pointer; 
-    text-transform: uppercase;
-    box-shadow: 0 5px 15px rgba(255, 215, 0, 0.3);
-    margin-top: 10px;
-    display: block;
+    max-width: 200px;
+    margin: 10px auto;
 }
-.invite-btn:disabled { 
-    background: #333; color: #777; box-shadow: none; cursor: default; border: 1px solid #555;
-}
+.invite-btn:disabled { opacity: 0.5; cursor: default; box-shadow: none; }
 
 .chat-input-area {
     height: 60px; flex-shrink: 0;
@@ -665,23 +652,21 @@ body {
 }
 .sync-options {
     display: flex; 
-    flex-direction: column; /* Вертикально, чтобы вместить длинный текст */
-    gap: 12px; 
+    /* FIX: Vertical Stack */
+    flex-direction: column;
+    gap: 10px; 
     width: 100%; 
+    justify-content: center;
     align-items: center;
 }
 .sync-opt-btn {
-    width: 100%;
-    background: rgba(255,255,255,0.05); 
-    border: 1px solid var(--neon-blue);
-    padding: 15px; 
-    border-radius: 12px; 
-    color: white; 
-    font-family: 'Orbitron'; font-size: 14px; 
+    width: 100%; max-width: 300px; height: 50px;
+    background: rgba(255,255,255,0.05); border: 1px solid var(--neon-blue);
+    border-radius: 15px; color: white; font-size: 16px;
     cursor: pointer; transition: 0.2s;
-    text-align: center;
+    display: flex; align-items: center; justify-content: center;
 }
-.sync-opt-btn:active { background: var(--neon-blue); color: black; transform: scale(0.98); }
+.sync-opt-btn:active { transform: scale(0.95); background: rgba(0, 243, 255, 0.1); }
 
 .sync-status {
     margin-top: 20px; font-size: 12px; color: #888; font-style: italic; min-height: 20px;
@@ -751,9 +736,10 @@ body {
     background: radial-gradient(circle at 50% 30%, rgba(255, 215, 0, 0.1) 0%, transparent 60%);
 }
 .shop-card {
-    display: flex;
-    flex-direction: column;
-    align-items: center; /* Центрирует всё содержимое карточки магазина */
+    background: rgba(255,255,255,0.05); border: 1px solid var(--gold);
+    border-radius: 20px; padding: 20px; width: 100%; max-width: 350px;
+    text-align: center; box-shadow: 0 0 20px rgba(255, 215, 0, 0.2);
+    margin-top: 20px;
 }
 .shop-title { font-size: 22px; font-weight: 800; color: var(--gold); margin-bottom: 10px; }
 .shop-desc { font-size: 14px; color: #ccc; margin-bottom: 20px; line-height: 1.4; }
