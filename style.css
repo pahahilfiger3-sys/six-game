@@ -48,6 +48,15 @@ body {
 }
 .screen.active { display: flex; }
 
+/* --- SCROLL FIXES --- */
+.scroll-content {
+    flex: 1;
+    width: 100%;
+    overflow-y: auto;
+    padding-bottom: 120px; /* Space for Bottom Nav */
+    -webkit-overflow-scrolling: touch;
+}
+
 /* --- LOBBY STYLES --- */
 .header { padding: 60px 20px 20px; text-align: center; z-index: 10; }
 .game-title {
@@ -120,6 +129,24 @@ body {
     position: relative; z-index: 1; transition: fill 0.3s ease;
 }
 .nav-item.active .nav-icon { fill: #1a1510; }
+
+/* --- NAV FIXES (CSS Fallback for JS Bug) --- */
+#screen-lobby .nav-item:nth-child(1)::before,
+#screen-chat-list .nav-item:nth-child(2)::before,
+#screen-shop .nav-item:nth-child(3)::before,
+#screen-profile .nav-item:nth-child(4)::before {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(135deg, #ffd700 0%, #b8860b 100%);
+    border-radius: 25px; z-index: 0;
+    transform: translateY(0);
+}
+
+#screen-lobby .nav-item:nth-child(1) .nav-icon,
+#screen-chat-list .nav-item:nth-child(2) .nav-icon,
+#screen-shop .nav-item:nth-child(3) .nav-icon,
+#screen-profile .nav-item:nth-child(4) .nav-icon {
+    fill: #1a1510;
+}
 
 /* --- SEARCH & PROCESSING --- */
 .processing-container {
@@ -325,7 +352,10 @@ body {
     background: linear-gradient(90deg, #ffd700 0%, #ffaa00 100%);
     color: #000; box-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
 }
-.chat-list { padding: 0 20px; display: flex; flex-direction: column; gap: 25px; overflow-y: auto; padding-bottom: 100px; }
+.chat-list { 
+    padding: 0 20px; display: flex; flex-direction: column; gap: 25px; 
+    overflow-y: auto; padding-bottom: 120px; flex: 1; 
+}
 .chat-item {
     position: relative; margin-left: 30px; background: rgba(20, 20, 25, 0.6);
     backdrop-filter: blur(15px); border: 1px solid rgba(255, 215, 0, 0.15);
