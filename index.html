@@ -3,158 +3,220 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SIX</title>
+    <title>SIX - Premium Dating</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     
+    <!-- FONTS -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+    
     <link rel="stylesheet" href="style.css"> 
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
 </head>
 <body>
 
     <div id="app-container">
-        <!-- LOBBY -->
+        
+        <!-- ==================== LOBBY SCREEN ==================== -->
         <div id="screen-lobby" class="screen active">
-            <div class="lobby-container">
-                <div class="logo">SIX</div>
-                <div class="online-tag">🟢 ONLINE</div>
-                <button class="big-btn" onclick="startSearching()">START</button>
-                <div style="margin-top: 30px; opacity: 0.6; font-size: 14px; font-family: 'Orbitron', sans-serif;">Баланс: <b id="user-balance">1000 🪙</b></div>
+            <div class="header">
+                <div class="game-title">SIX</div>
+                <div class="game-subtitle">Premium Gaming</div>
+                <div class="online-badge">
+                    <span class="online-dot"></span>
+                    ONLINE
+                </div>
             </div>
+
+            <div class="main-content">
+                <!-- START BUTTON (Mapped to startSearching) -->
+                <button class="start-button" onclick="startSearching()">
+                    <div class="coin">
+                        <span class="button-text">START</span>
+                    </div>
+                </button>
+            </div>
+
+            <div class="balance">
+                Balance: <span class="balance-amount" id="user-balance">1000 🪙</span>
+            </div>
+
+            <!-- NAVIGATION -->
             <div class="bottom-nav">
-                <div class="nav-item active" onclick="switchScreen('lobby')">🏠</div>
-                <div class="nav-item" onclick="loadChatList()">💬</div>
-                <div class="nav-item" onclick="switchScreen('shop')">🛍</div>
-                <div class="nav-item" onclick="loadProfile()">👤</div>
+                <div class="nav-item active" onclick="switchScreen('lobby')">
+                    <svg class="nav-icon" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+                </div>
+                <div class="nav-item" onclick="loadChatList()">
+                    <svg class="nav-icon" viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/></svg>
+                </div>
+                <div class="nav-item" onclick="switchScreen('shop')">
+                    <svg class="nav-icon" viewBox="0 0 24 24"><path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49c.08-.14.12-.31.12-.48 0-.55-.45-1-1-1H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"/></svg>
+                </div>
+                <div class="nav-item" onclick="loadProfile()">
+                    <svg class="nav-icon" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                </div>
             </div>
         </div>
 
-        <!-- SEARCH -->
+        <!-- ==================== SEARCH SCREEN ==================== -->
         <div id="screen-search" class="screen">
-            <div style="flex-grow:1; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+            <div class="processing-container">
                 <div class="spinner"></div>
-                <div style="margin-top: 20px; font-weight: 600; font-size: 18px;">Ищем пару...</div>
-                <button onclick="forceExit()" style="margin-top:20px; border:1px solid #555; background:none; color:#777; padding: 10px 20px; border-radius: 8px; font-family: 'Orbitron', sans-serif;">ОТМЕНА</button>
+                <div class="game-subtitle" style="margin-top: 20px;">SEARCHING FOR MATCH...</div>
+                <button class="action-btn leave-btn" onclick="forceExit()" style="margin-top: 30px; width: 60px; height: 60px;">
+                    <svg viewBox="0 0 24 24" style="fill: #ff4444;"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+                </button>
             </div>
         </div>
 
-        <!-- PROCESSING -->
+        <!-- ==================== PROCESSING SCREEN ==================== -->
         <div id="screen-processing" class="screen">
             <div class="processing-container">
                 <div class="neon-loader"></div>
-                <div class="processing-text">PROCESSING DATA...</div>
-                <div class="processing-subtext">Synchronizing Neural Link...</div>
+                <div class="processing-text">NEURAL SYNC</div>
+                <div class="processing-subtext">Establishing Connection...</div>
             </div>
         </div>
 
-        <!-- GAME -->
+        <!-- ==================== GAME SCREEN ==================== -->
         <div id="screen-game" class="screen">
-            <div class="game-header">
-                <div class="nav-exit" onclick="forceExit()">ЛОББИ</div>
-                <span id="game-timer">00:00</span>
-            </div>
             
-            <div class="top-spotlight" id="top-bar">
-                <div class="q-content" id="q-box-content">
-                    <div class="q-label">РАУНД 1</div>
-                    <div class="q-text" id="q-text-val">Загрузка...</div>
-                    <div class="hint-text" id="hint-text">👆 TAP PLAYER TO LISTEN</div>
+            <!-- Game Header -->
+            <div class="game-header">
+                <div class="timer" id="game-timer">00:00</div>
+                <div class="round-info q-label">ROUND 1</div>
+            </div>
+
+            <!-- Question Card / Top Spotlight -->
+            <div class="question-card-container" id="top-bar">
+                <!-- Question Text Mode -->
+                <div id="q-box-content">
+                    <div class="question-text" id="q-text-val">Loading Question...</div>
+                    <div class="hint-text" id="hint-text">TAP PLAYER TO LISTEN</div>
                 </div>
+                
+                <!-- Audio Player Mode (Hidden by default) -->
                 <div class="player-content" id="player-box-content" style="display:none;">
-                    <div class="play-btn">▶️</div>
+                    <div class="play-icon">▶️</div>
                     <div class="equalizer" id="audio-visualizer">
                         <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
                     </div>
                     <div class="answer-text-display"></div>
                 </div>
             </div>
-            
-            <div class="center-wrapper"> 
-                <div class="table-grid" id="table-grid">
-                    <svg id="connections-layer" xmlns="http://www.w3.org/2000/svg">
-                        <defs>
-                            <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
-                                <polygon points="0 0, 10 3.5, 0 7" fill="#00f3ff" />
-                            </marker>
-                            <marker id="arrowhead-match" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
-                                <polygon points="0 0, 10 3.5, 0 7" fill="#00ff88" />
-                            </marker>
-                        </defs>
-                    </svg>
-                </div>
+
+            <!-- Game Grid (JS injects .player-card here) -->
+            <div class="arena-grid" id="table-grid">
+                <!-- SVG Layer for Voting Lines -->
+                <svg id="connections-layer" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                            <polygon points="0 0, 10 3.5, 0 7" fill="#00f3ff" />
+                        </marker>
+                        <marker id="arrowhead-match" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                            <polygon points="0 0, 10 3.5, 0 7" fill="#00ff88" />
+                        </marker>
+                    </defs>
+                </svg>
             </div>
 
-            <div id="gift-info-toast" class="gift-toast">Выберите подарок</div>
+            <!-- Toast Notification -->
+            <div id="gift-info-toast" class="gift-toast">Select a Gift</div>
 
-            <div class="controls-container" id="controls">
-                <div class="side-col left">
-                    <div class="gift-btn" onclick="selectGift('heart')">
-                        <svg class="gift-icon" viewBox="0 0 24 24" style="fill:#ff0055;"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
-                        <span class="gift-price">25</span>
-                    </div>
-                    <div class="gift-btn" onclick="selectGift('joker')">
-                        <svg class="gift-icon" viewBox="0 0 24 24" style="fill:#bd00ff;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm3.5-9c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5S9.33 8 8.5 8 7 8.67 7 9.5 7.67 11 8.5 11zm3.5 6.5c2.33 0 4.31-1.46 5.11-3.5H6.89c.8 2.04 2.78 3.5 5.11 3.5z"/></svg>
-                        <span class="gift-price">50</span>
-                    </div>
+            <!-- Game Controls -->
+            <div class="game-controls" id="controls">
+                
+                <!-- Left: Keyboard Input -->
+                <div class="action-btn" id="kb-btn" onclick="openTextInput()">
+                    <svg viewBox="0 0 24 24"><path d="M20 6h-2.18c.11-.31.18-.65.18-1 0-1.66-1.34-3-3-3-1.05 0-1.96.54-2.5 1.35l-.5.67-.5-.68C10.96 2.54 10.05 2 9 2 7.34 2 6 3.34 6 5c0 .35.07.69.18 1H4c-1.11 0-1.99.89-1.99 2L2 19c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2zm-5-2c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zM9 4c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm11 15H4v-2h16v2zm0-5H4V8h5.08L7 10.83 8.62 12 11 8.76l1-1.36 1 1.36L15.38 12 17 10.83 14.92 8H20v6z"/></svg>
                 </div>
 
-                <div class="mic-wrapper" id="mic-wrapper">
-                    <button class="mic-btn action-btn" id="mic-btn" onclick="toggleRecording()">
-                        <svg class="mic-icon" viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/><path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
-                    </button>
-                    <button class="keyboard-btn action-btn" id="kb-btn" onclick="openTextInput()">
-                        ⌨️
-                    </button>
+                <!-- Center: Microphone -->
+                <div class="mic-btn action-btn" id="mic-btn" onclick="toggleRecording()">
+                    <svg class="mic-icon" viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/><path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
                 </div>
 
-                <div class="side-col right">
-                    <div class="gift-btn" onclick="selectGift('spy')">
-                        <svg class="gift-icon" viewBox="0 0 24 24" style="fill:#ffd700;"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
-                        <span class="gift-price">100</span>
-                    </div>
-                    <div class="gift-btn" onclick="selectGift('xray')">
-                        <svg class="gift-icon" viewBox="0 0 24 24" style="fill:#00f3ff;"><path d="M12,2L12,2C6.5,2,2,6.5,2,12s4.5,10,10,10s10-4.5,10-10S17.5,2,12,2z M12,20c-4.4,0-8-3.6-8-8s3.6-8,8-8s8,3.6,8,8 S16.4,20,12,20z M12,5c-3.9,0-7,3.1-7,7s3.1,7,7,7s7-3.1,7-7S15.9,5,12,5z M12,17c-2.8,0-5-2.2-5-5s2.2-5,5-5s5,2.2,5,5S14.8,17,12,17z"/></svg>
-                        <span class="gift-price">200</span>
-                    </div>
+                <!-- Right: Exit -->
+                <div class="action-btn leave-btn" onclick="forceExit()">
+                    <svg viewBox="0 0 24 24"><path d="M10.09 15.59L11.5 17l5-5-5-5-1.41 1.41L12.67 11H3v2h9.67l-2.58 2.59zM19 3H5c-1.11 0-2 .9-2 2v4h2V5h14v14H5v-4H3v4c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/></svg>
+                </div>
+
+            </div>
+
+            <!-- Gifts Bar (Absolute Positioned above controls) -->
+            <div class="gifts-bar">
+                <div class="gift-btn" onclick="selectGift('heart')">
+                    <span class="gift-icon">❤️</span> <span class="gift-price">25</span>
+                </div>
+                <div class="gift-btn" onclick="selectGift('joker')">
+                    <span class="gift-icon">🃏</span> <span class="gift-price">50</span>
+                </div>
+                <div class="gift-btn" onclick="selectGift('spy')">
+                    <span class="gift-icon">👁</span> <span class="gift-price">100</span>
+                </div>
+                <div class="gift-btn" onclick="selectGift('xray')">
+                    <span class="gift-icon">☢️</span> <span class="gift-price">200</span>
                 </div>
             </div>
         </div>
 
-        <!-- CHAT LIST -->
+        <!-- ==================== CHAT LIST SCREEN ==================== -->
         <div id="screen-chat-list" class="screen">
-            <div class="chat-header">
-                <div class="chat-back-btn" onclick="switchScreen('lobby')">⬅</div>
-                <div>MESSAGES</div>
-                <div style="font-size: 20px; cursor: pointer;" onclick="switchScreen('rules')">ℹ️</div>
+            <div class="header">
+                <div class="screen-title">MESSAGES</div>
             </div>
-            <div class="chat-tabs">
-                <div class="chat-tab active" id="tab-active" onclick="renderChatList('active')">ACTIVE</div>
-                <div class="chat-tab" id="tab-archive" onclick="renderChatList('archived')">ARCHIVE</div>
+
+            <div class="tab-container">
+                <div class="tab-box">
+                    <div class="tab active" id="tab-active" onclick="renderChatList('active')">ACTIVE</div>
+                    <div class="tab" id="tab-archive" onclick="renderChatList('archived')">ARCHIVE</div>
+                </div>
             </div>
-            <div class="chat-list-container" id="chat-list-container">
-                <!-- Chat items injected here -->
+
+            <div class="chat-list" id="chat-list-container">
+                <!-- Chat items injected by JS -->
+            </div>
+
+            <!-- Navigation -->
+            <div class="bottom-nav">
+                <div class="nav-item" onclick="switchScreen('lobby')"><svg class="nav-icon" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg></div>
+                <div class="nav-item active" onclick="loadChatList()"><svg class="nav-icon" viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/></svg></div>
+                <div class="nav-item" onclick="switchScreen('shop')"><svg class="nav-icon" viewBox="0 0 24 24"><path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49c.08-.14.12-.31.12-.48 0-.55-.45-1-1-1H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"/></svg></div>
+                <div class="nav-item" onclick="loadProfile()"><svg class="nav-icon" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg></div>
             </div>
         </div>
 
-        <!-- CHAT ROOM -->
+        <!-- ==================== CHAT ROOM SCREEN ==================== -->
         <div id="screen-chat-room" class="screen">
-            <div class="chat-room-header">
-                <div class="chat-back-btn" onclick="loadChatList()">⬅</div>
-                <div class="chat-room-avatar" id="chat-room-avatar"></div>
-                <div class="chat-room-name" id="chat-room-name">Name</div>
+            <div class="chat-header-room">
+                <div class="back-btn" onclick="loadChatList()">
+                    <svg class="back-icon" viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+                </div>
+                <div class="header-avatar" id="chat-room-avatar"></div>
+                <div class="header-info">
+                    <div class="header-name" id="chat-room-name">Name</div>
+                    <div class="header-status"><span class="status-dot"></span>Online</div>
+                </div>
                 <div class="chat-report-btn" onclick="reportUser()">⚠️</div>
             </div>
-            <div class="chat-messages-area" id="chat-messages-area">
-                <!-- Messages injected here -->
-            </div>
-            <div class="chat-input-area">
-                <button class="chat-action-btn" onclick="sendGameInvite()">🔥</button>
-                <input type="text" class="chat-input" id="chat-input" placeholder="Сообщение...">
-                <button class="chat-send-btn" onclick="sendMessage()">
-                    <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
-                </button>
+
+            <div class="chat-area" id="chat-messages-area">
+                <!-- Messages injected by JS -->
             </div>
 
-            <!-- NATIVE GAME BOTTOM SHEET -->
+            <div class="input-area">
+                <div class="input-container">
+                    <button class="input-icon-btn" onclick="sendGameInvite()">
+                        <svg class="input-icon" viewBox="0 0 24 24"><path d="M20 6h-2.18c.11-.31.18-.65.18-1 0-1.66-1.34-3-3-3-1.05 0-1.96.54-2.5 1.35l-.5.67-.5-.68C10.96 2.54 10.05 2 9 2 7.34 2 6 3.34 6 5c0 .35.07.69.18 1H4c-1.11 0-1.99.89-1.99 2L2 19c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2zm-5-2c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zM9 4c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm11 15H4v-2h16v2zm0-5H4V8h5.08L7 10.83 8.62 12 11 8.76l1-1.36 1 1.36L15.38 12 17 10.83 14.92 8H20v6z"/></svg>
+                    </button>
+                    <input type="text" class="message-input" id="chat-input" placeholder="Message...">
+                    <button class="mic-btn-small" onclick="sendMessage()">
+                        <svg class="mic-icon" viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- SYNC GAME BOTTOM SHEET -->
             <div id="game-bottom-sheet">
                 <div class="game-sheet-header">
                     <div class="game-lives" id="sync-lives">❤️❤️❤️</div>
@@ -172,106 +234,144 @@
             </div>
         </div>
 
-        <!-- PROFILE SCREEN -->
+        <!-- ==================== PROFILE SCREEN ==================== -->
         <div id="screen-profile" class="screen">
-            <div class="chat-header">
-                <div class="chat-back-btn" onclick="switchScreen('lobby')">⬅</div>
-                <div>PROFILE</div>
-                <div style="font-size: 20px;">⚙️</div>
+            <div class="header">
+                <h1 class="page-title">PROFILE</h1>
+                <button class="settings-btn" onclick="switchScreen('rules')">
+                    <svg class="settings-icon" viewBox="0 0 24 24"><path d="M11 17h2v2h-2zm0-8h2v6h-2zm1-8L2 22h20L12 1z"/></svg>
+                </button>
             </div>
-            <div class="profile-container">
-                <div class="profile-stats-row">
-                    <div class="stat-box">
-                        <div class="stat-val" style="color:var(--gold)" id="profile-balance">0</div>
-                        <div class="stat-label">BALANCE</div>
-                    </div>
-                    <div class="stat-box">
-                        <div class="stat-val" style="color:var(--neon-purple)" id="profile-karma">100</div>
-                        <div class="stat-label">KARMA</div>
-                    </div>
+
+            <div class="stats-row">
+                <div class="stat-box">
+                    <div class="stat-label">Balance</div>
+                    <div class="stat-value gold" id="profile-balance">0</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">Karma</div>
+                    <div class="stat-value purple" id="profile-karma">100%</div>
+                </div>
+            </div>
+
+            <div class="profile-card">
+                <div class="avatar-wrapper-profile">
+                    <div class="avatar-large" id="profile-avatar-view"></div>
                 </div>
 
-                <div class="profile-avatar-large" id="profile-avatar-view"></div>
+                <div class="form-group">
+                    <label class="form-label">Name</label>
+                    <input type="text" class="form-input" id="input-name" placeholder="Enter your name">
+                </div>
 
-                <div class="profile-form">
-                    <div class="profile-input-group">
-                        <span class="input-label">NAME</span>
-                        <input type="text" class="profile-input" id="input-name" placeholder="Your Name">
-                    </div>
-                    
-                    <div class="profile-input-group">
-                        <span class="input-label">AGE</span>
-                        <input type="number" class="profile-input" id="input-age" placeholder="18+">
-                    </div>
+                <div class="form-group">
+                    <label class="form-label">Age</label>
+                    <input type="number" class="form-input" id="input-age" placeholder="18+">
+                </div>
 
-                    <div class="profile-input-group">
-                        <span class="input-label">CITY</span>
-                        <input type="text" class="profile-input" id="input-city" placeholder="Night City">
-                    </div>
+                <div class="form-group">
+                    <label class="form-label">City</label>
+                    <input type="text" class="form-input" id="input-city" placeholder="City">
+                </div>
 
+                <div class="form-group">
+                    <label class="form-label">Gender</label>
                     <div class="gender-toggle">
-                        <div class="gender-option" data-type="male" onclick="toggleGender('male')">MALE</div>
-                        <div class="gender-option" data-type="female" onclick="toggleGender('female')">FEMALE</div>
+                        <button class="gender-option" data-type="male" onclick="toggleGender('male')">Male</button>
+                        <button class="gender-option" data-type="female" onclick="toggleGender('female')">Female</button>
                     </div>
-
-                    <button class="save-btn" onclick="saveProfile()">SAVE CHANGES</button>
                 </div>
+
+                <button class="save-btn" onclick="saveProfile()">SAVE CHANGES</button>
+            </div>
+
+            <!-- Navigation -->
+            <div class="bottom-nav">
+                <div class="nav-item" onclick="switchScreen('lobby')"><svg class="nav-icon" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg></div>
+                <div class="nav-item" onclick="loadChatList()"><svg class="nav-icon" viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/></svg></div>
+                <div class="nav-item" onclick="switchScreen('shop')"><svg class="nav-icon" viewBox="0 0 24 24"><path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49c.08-.14.12-.31.12-.48 0-.55-.45-1-1-1H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"/></svg></div>
+                <div class="nav-item active" onclick="loadProfile()"><svg class="nav-icon" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg></div>
             </div>
         </div>
 
-        <!-- SHOP SCREEN -->
+        <!-- ==================== SHOP SCREEN ==================== -->
         <div id="screen-shop" class="screen">
-            <div class="chat-header">
-                <div class="chat-back-btn" onclick="switchScreen('lobby')">⬅</div>
-                <div>SHOP</div>
-                <div style="font-size: 20px;">💎</div>
+            <div class="header">
+                <h1 class="page-title">SHOP</h1>
+                <button class="back-btn" onclick="switchScreen('lobby')">
+                    <svg class="back-icon" viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+                </button>
             </div>
-            <div class="shop-container">
-                <div class="shop-card">
-                    <div class="shop-title">INVITE FRIEND</div>
-                    <div class="shop-desc">
-                        Пригласи друга и получи <b>100 🪙</b>.<br>
-                        Друг получит <b>50 🪙</b>.
+
+            <div class="content" style="padding: 20px; display: flex; flex-direction: column; align-items: center; gap: 30px;">
+                <div class="card-container">
+                    <div class="black-card">
+                        <div class="card-corner"></div>
+                        <div class="card-logo">SIX</div>
+                        <div class="card-info">
+                            <div class="card-label">Exclusive Member</div>
+                            <div class="card-holder">INVITE FRIEND</div>
+                        </div>
+                        <button class="card-chip" title="Copy Link" onclick="inviteFriend()">
+                            <svg class="chip-icon" viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
+                        </button>
                     </div>
-                    <button class="invite-btn" onclick="inviteFriend()">INVITE FRIEND</button>
                 </div>
+
+                <div class="reward-section">
+                    <div class="reward-title">Earn Per Referral</div>
+                    <div class="reward-value">+500</div>
+                    <div class="reward-desc">Coins for every friend who joins</div>
+                </div>
+
+                <button class="invite-btn" onclick="inviteFriend()">Copy Invite Link</button>
+            </div>
+
+            <!-- Navigation -->
+            <div class="bottom-nav">
+                <div class="nav-item" onclick="switchScreen('lobby')"><svg class="nav-icon" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg></div>
+                <div class="nav-item" onclick="loadChatList()"><svg class="nav-icon" viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/></svg></div>
+                <div class="nav-item active" onclick="switchScreen('shop')"><svg class="nav-icon" viewBox="0 0 24 24"><path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49c.08-.14.12-.31.12-.48 0-.55-.45-1-1-1H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"/></svg></div>
+                <div class="nav-item" onclick="loadProfile()"><svg class="nav-icon" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg></div>
             </div>
         </div>
 
-        <!-- RULES SCREEN -->
+        <!-- ==================== RULES SCREEN ==================== -->
         <div id="screen-rules" class="screen">
-            <div class="chat-header">
-                <div class="chat-back-btn" onclick="loadChatList()">⬅</div>
-                <div>RULES</div>
-                <div style="font-size: 20px;">📜</div>
+            <div class="header">
+                <h1 class="page-title">RULES</h1>
+                <button class="back-btn" onclick="switchScreen('lobby')">
+                    <svg class="back-icon" viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+                </button>
             </div>
-            <div class="rules-container">
+            <div class="content" style="padding: 20px;">
                 <ul class="rules-list">
                     <li class="rule-item">
                         <span class="rule-title">1. CHAT BURNOUT</span>
-                        Чаты удаляются автоматически, если в них нет активности 24 часа.
+                        Chats are deleted automatically if inactive for 24 hours.
                     </li>
                     <li class="rule-item">
                         <span class="rule-title">2. SAFETY FIRST</span>
-                        Обмен контактами (телефоны, юзернеймы) запрещен до 20 сообщений в чате.
+                        Contact sharing is disabled until 20 messages are exchanged.
                     </li>
                     <li class="rule-item">
                         <span class="rule-title">3. RESPECT</span>
-                        Оскорбления, спам и агрессия запрещены. Бан выдается навсегда.
+                        Harassment results in a permanent ban.
                     </li>
                     <li class="rule-item">
                         <span class="rule-title">4. KARMA SYSTEM</span>
-                        Ложные жалобы (репорты) снижают вашу Карму. Низкая Карма = Меньше матчей.
+                        False reports lower your Karma. Low Karma = Fewer matches.
                     </li>
                 </ul>
             </div>
         </div>
 
-        <!-- MODAL -->
+        <!-- ==================== MODALS ==================== -->
         <div id="profile-modal">
             <div class="modal-close" onclick="closeProfileModal()">✖</div>
             <img id="profile-large-img" src="" alt="Profile">
         </div>
+
     </div>
 
     <script src="script.js"></script>
