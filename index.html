@@ -149,28 +149,17 @@
                     <svg class="mic-icon" viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/><path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
                 </div>
 
-                <!-- Right: Exit -->
-                <div class="action-btn leave-btn" onclick="forceExit()">
-                    <svg viewBox="0 0 24 24"><path d="M10.09 15.59L11.5 17l5-5-5-5-1.41 1.41L12.67 11H3v2h9.67l-2.58 2.59zM19 3H5c-1.11 0-2 .9-2 2v4h2V5h14v14H5v-4H3v4c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/></svg>
+                <!-- Right: Gifts -->
+                <div class="action-btn gift-btn" onclick="showGiftModal()">
+                    <svg viewBox="0 0 24 24" style="fill: #ffd700;">
+                        <path d="M20 6h-2.18c.11-.31.18-.65.18-1 0-1.66-1.34-3-3-3-1.05 0-1.96.54-2.5 1.35l-.5.67-.5-.68C10.96 2.54 10.05 2 9 2 7.34 2 6 3.34 6 5c0 .35.07.69.18 1H4c-1.11 0-1.99.89-1.99 2L2 19c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2zm-5-2c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zM9 4c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm11 15H4v-2h16v2zm0-5H4V8h5.08L7 10.83 8.62 12 11 8.76l1-1.36 1 1.36L15.38 12 17 10.83 14.92 8H20v6z"/>
+                    </svg>
                 </div>
 
             </div>
 
             <!-- Gifts Bar (Absolute Positioned above controls) -->
-            <div class="gifts-bar">
-                <div class="gift-btn" onclick="selectGift('heart')">
-                    <span class="gift-icon">❤️</span> <span class="gift-price">25</span>
-                </div>
-                <div class="gift-btn" onclick="selectGift('joker')">
-                    <span class="gift-icon">🃏</span> <span class="gift-price">50</span>
-                </div>
-                <div class="gift-btn" onclick="selectGift('spy')">
-                    <span class="gift-icon">👁</span> <span class="gift-price">100</span>
-                </div>
-                <div class="gift-btn" onclick="selectGift('xray')">
-                    <span class="gift-icon">☢️</span> <span class="gift-price">200</span>
-                </div>
-            </div>
+            
         </div>
 
         <!-- ==================== CHAT LIST SCREEN ==================== -->
@@ -386,6 +375,75 @@
         <div id="profile-modal">
             <div class="modal-close" onclick="closeProfileModal()">✖</div>
             <img id="profile-large-img" src="" alt="Profile">
+        </div>
+        <div id="gift-modal" class="modal hidden">
+            <div class="modal-content vertical-modal-content">
+                <div class="modal-header-vertical">
+                    <div class="modal-title-group">
+                        <h3>SELECT GIFT</h3>
+                        <div class="modal-subtitle">Tap item, then tap player</div>
+                    </div>
+                    <div class="modal-close" onclick="closeGiftModal()">✖</div>
+                </div>
+
+                <div class="vertical-gift-list">
+                    <div class="v-item" onclick="selectGiftMode('heart')">
+                        <div class="v-icon-box" style="border-color: #ff0055; color: #ff0055">
+                            <svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                        </div>
+                        <div class="v-info">
+                            <div class="v-name" style="color: #ff0055">HEART</div>
+                            <div class="v-desc">Send affection</div>
+                        </div>
+                        <div class="v-gift-price">10 🪙</div>
+                    </div>
+
+                    <div class="v-item" onclick="selectGiftMode('spy')">
+                        <div class="v-icon-box" style="border-color: #ffd700; color: #ffd700">
+                            <svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+                        </div>
+                        <div class="v-info">
+                            <div class="v-name" style="color: #ffd700">SPY</div>
+                            <div class="v-desc">Reveal liker</div>
+                        </div>
+                        <div class="v-gift-price">50 🪙</div>
+                    </div>
+
+                    <div class="v-item" onclick="selectGiftMode('xray')">
+                        <div class="v-icon-box" style="border-color: #00f3ff; color: #00f3ff">
+                            <svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-5.5-2.5l7.51-3.49L17.5 6.5 9.99 9.99 6.5 17.5zm5.5-6.6c.61 0 1.1.49 1.1 1.1s-.49 1.1-1.1 1.1-1.1-.49-1.1-1.1.49-1.1 1.1-1.1z"/></svg>
+                        </div>
+                        <div class="v-info">
+                            <div class="v-name" style="color: #00f3ff">X-RAY</div>
+                            <div class="v-desc">Unblur avatar</div>
+                        </div>
+                        <div class="v-gift-price">100 🪙</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="answer-modal" class="modal hidden" onclick="closeAnswerModal()">
+            <div class="modal-content answer-content" onclick="event.stopPropagation()">
+                <div class="modal-header">
+                    <h3 id="answer-player-name" style="color:var(--gold); font-family:'Orbitron'">ANSWER</h3>
+                    <div class="modal-close" onclick="closeAnswerModal()">✖</div>
+                </div>
+                
+                <div class="answer-display frequency-variant">
+                    <div id="audio-view" class="audio-state hidden">
+                        <div class="waveform-container active">
+                            <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
+                            <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
+                        </div>
+                        <div class="play-status" style="text-align:center; color:#00f3ff; font-family:'Orbitron'; margin-top:10px;">PLAYING...</div>
+                    </div>
+                    
+                    <div id="text-view" class="text-state">
+                        <div class="typewriter-text" id="player-answer-text"></div>
+                    </div>
+                </div>
+            </div>
         </div>
 
     </div>
