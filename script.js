@@ -84,12 +84,13 @@ const profileModal = document.getElementById('profile-modal');
 const profileImg = document.getElementById('profile-large-img');
 const giftToast = document.getElementById('gift-info-toast');
 const gameBottomSheet = document.getElementById('game-bottom-sheet');
+const giftModal = document.getElementById('gift-modal');
 
 const GIFT_DESCRIPTIONS = {
-    'heart': "❤️ ЛАЙК: Выразить симпатию",
-    'joker': "🃏 ДЖОКЕР: Сменить вопрос",
-    'spy': "👁 ШПИОН: Открыть фото",
-    'xray': "☢️ РЕНТГЕН: Увидеть всех"
+    'heart': "❤️ LIKE: Tap a player to send",
+    'joker': "🃏 JOKER: Tap a player to send",
+    'spy': "👁 SPY: Tap a player to reveal photo",
+    'xray': "☢️ X-RAY: Tap a player to reveal all"
 };
 
 // --- NAVIGATION ---
@@ -137,10 +138,11 @@ function forceExit() {
     isXrayActive = false;
     lastGameData = null;
     
-    updateGiftUI();
     resetSVG();
     closeProfileModal();
+    closeGiftModal();
     giftToast.classList.remove('visible');
+    stopPlayback();
 }
 
 async function startSearching() {
@@ -284,7 +286,7 @@ function updateGame(data) {
 
     document.getElementById('game-timer').innerText = `00:${data.time_left < 10 ? '0'+data.time_left : data.time_left}`;
     document.getElementById('q-text-val').innerText = data.question;
-    document.querySelector('.q-label').innerText = 'РАУНД ' + data.round;
+    document.querySelector('.q-label').innerText = 'ROUND ' + data.round;
 
     if (currentPhase !== data.phase) {
         currentPhase = data.phase;
@@ -306,9 +308,7 @@ function handlePhaseChange(phase) {
     resetSVG();
     
     // Reset Spotlight UI
-    document.getElementById('hint-text').style.display = 'none';
-    document.getElementById('player-box-content').style.display = 'none';
-    document.getElementById('q-box-content').style.display = 'flex';
+    stopPlayback();
 
     if (phase === 'recording') {
         btns.forEach(b => b.classList.remove('disabled'));
@@ -319,12 +319,16 @@ function handlePhaseChange(phase) {
             if(mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
         }
         btns.forEach(b => b.classList.add('disabled'));
+        // Enable Gift Button
+        document.querySelector('.gift-menu-btn').classList.remove('disabled');
         
         // Show Hint in Listening Phase
         document.getElementById('hint-text').style.display = 'block';
     } else {
         // Voting, Results
         btns.forEach(b => b.classList.add('disabled'));
+        // Enable Gift Button in Voting/Results
+        document.querySelector('.gift-menu-btn').classList.remove('disabled');
     }
 
     if (phase === 'voting') tg.HapticFeedback.notificationOccurred('warning');
@@ -392,7 +396,7 @@ function renderPlayers(players, phase) {
                 </div>
                 ${actionButtonHtml}
             </div>
-            <div class="name-tag" style="${isMe ? 'color:var(--neon-blue)' : ''}">${isMe ? 'ВЫ' : p.name}</div>
+            <div class="name-tag" style="${isMe ? 'color:var(--neon-blue)' : ''}">${isMe ? 'YOU' : p.name}</div>
         `;
 
         card.onclick = () => {
@@ -401,7 +405,7 @@ function renderPlayers(players, phase) {
             if (phase === 'listening' && p.has_answer) activateSpotlight(p);
             if (phase === 'voting') castVote(p);
             if (phase === 'results') {
-                 if(confirm("Купить SPY-просмотр за 100 монет?")) sendGiftToPlayer(p, 'spy');
+                 if(confirm("Buy SPY view for 100 coins?")) sendGiftToPlayer(p, 'spy');
             }
         };
 
@@ -414,7 +418,7 @@ function renderPlayers(players, phase) {
 async function openTextInput() {
     if (currentPhase !== 'recording') return;
     
-    const text = prompt("Ваш ответ (макс 50 символов):", "");
+    const text = prompt("Your answer (max 50 chars):", "");
     if (!text || !text.trim()) return;
 
     try {
@@ -441,23 +445,20 @@ function closeProfileModal() {
 
 // --- GIFTS & VFX ---
 
-function selectGift(type) {
-    if (selectedGiftType === type) {
-        selectedGiftType = null;
-        giftToast.classList.remove('visible');
-    } else {
-        selectedGiftType = type;
-        giftToast.innerText = GIFT_DESCRIPTIONS[type];
-        giftToast.classList.add('visible');
-    }
-    tg.HapticFeedback.impactOccurred('light');
-    updateGiftUI();
+function openGiftModal() {
+    giftModal.classList.add('active');
 }
 
-function updateGiftUI() {
-    document.querySelectorAll('.gift-btn').forEach(btn => {
-        btn.classList.toggle('selected', selectedGiftType && btn.getAttribute('onclick').includes(selectedGiftType));
-    });
+function closeGiftModal() {
+    giftModal.classList.remove('active');
+}
+
+function selectGift(type) {
+    closeGiftModal();
+    selectedGiftType = type;
+    giftToast.innerText = GIFT_DESCRIPTIONS[type];
+    giftToast.classList.add('visible');
+    tg.HapticFeedback.impactOccurred('light');
 }
 
 async function sendGiftToPlayer(player, type) {
@@ -484,7 +485,7 @@ async function sendGiftToPlayer(player, type) {
                 setTimeout(() => openProfileModal(player.photo), 500);
             }
             else if (type === 'joker') {
-                alert("🃏 ДЖОКЕР! Вопрос раунда изменен!");
+                alert("🃏 JOKER! Question changed!");
             }
             else if (type === 'xray') {
                 isXrayActive = true;
@@ -495,13 +496,12 @@ async function sendGiftToPlayer(player, type) {
             }
 
         } else {
-            alert(data.msg === 'No money' ? "Недостаточно монет!" : "Ошибка");
+            alert(data.msg === 'No money' ? "Not enough coins!" : "Error");
         }
     } catch (e) { console.error(e); }
     
     selectedGiftType = null;
     giftToast.classList.remove('visible');
-    updateGiftUI();
 }
 
 // --- CORE ACTIONS ---
@@ -527,12 +527,16 @@ function activateSpotlight(player) {
 
     currentPlayerId = player.id;
     
-    // UI Updates
-    document.getElementById('hint-text').style.display = 'none'; // Hide Hint
-    document.getElementById('q-box-content').style.display = 'none'; // Hide Question
+    // Toggle Header Views
+    document.getElementById('question-view').style.display = 'none';
+    document.getElementById('spotlight-view').classList.remove('hidden');
+    document.getElementById('spotlight-view').style.display = 'flex';
     
-    const pBox = document.getElementById('player-box-content');
-    pBox.style.display = 'flex'; // Show Player Content
+    // Set Name
+    document.getElementById('spotlight-name').innerText = player.name;
+    
+    const contentBox = document.getElementById('spotlight-content');
+    contentBox.innerHTML = ''; // Clear previous
 
     // Update Player Cards (Ripple Effect)
     document.querySelectorAll('.player-card').forEach(c => c.classList.remove('playing'));
@@ -540,21 +544,22 @@ function activateSpotlight(player) {
     if (card) card.classList.add('playing');
 
     if (player.answer_type === 'audio') {
-        // Show Equalizer
-        document.querySelector('.equalizer').style.display = 'flex';
-        document.querySelector('.equalizer').classList.add('active');
-        document.querySelector('.answer-text-display').style.display = 'none';
+        // Inject Waveform HTML
+        contentBox.innerHTML = `
+            <div class="waveform-container active">
+                <div class="wave-bar"></div><div class="wave-bar"></div>
+                <div class="wave-bar"></div><div class="wave-bar"></div>
+                <div class="wave-bar"></div><div class="wave-bar"></div>
+                <div class="wave-bar"></div>
+            </div>
+        `;
         
         currentAudio = new Audio(player.answer_content);
         currentAudio.play();
         currentAudio.onended = stopPlayback;
     } else {
-        // Show Text
-        document.querySelector('.equalizer').style.display = 'none';
-        document.querySelector('.equalizer').classList.remove('active');
-        const txtDisplay = document.querySelector('.answer-text-display');
-        txtDisplay.style.display = 'block';
-        txtDisplay.innerText = `"${player.answer_content}"`;
+        // Inject Text HTML
+        contentBox.innerHTML = `<div class="typewriter-text">"${player.answer_content}"</div>`;
     }
 }
 
@@ -562,18 +567,13 @@ function stopPlayback() {
     if (currentAudio) { currentAudio.pause(); currentAudio = null; }
     currentPlayerId = null;
     
-    // UI Updates
-    document.getElementById('player-box-content').style.display = 'none';
-    document.getElementById('q-box-content').style.display = 'flex';
-    
-    // Show Hint again if still in listening phase
-    if (currentPhase === 'listening') {
-        document.getElementById('hint-text').style.display = 'block';
-    }
+    // Toggle Header Views Back
+    document.getElementById('spotlight-view').style.display = 'none';
+    document.getElementById('spotlight-view').classList.add('hidden');
+    document.getElementById('question-view').style.display = 'flex';
 
     // Remove Ripple
     document.querySelectorAll('.player-card').forEach(c => c.classList.remove('playing'));
-    document.querySelector('.equalizer').classList.remove('active');
 }
 
 // --- MIC ---
@@ -681,7 +681,7 @@ function renderChatList(filter) {
     const filtered = loadedChats.filter(c => c.status === filter);
     
     if (filtered.length === 0) {
-        container.innerHTML = `<div style="text-align:center; color:#555; margin-top:50px;">${filter === 'active' ? 'Нет активных чатов' : 'Архив пуст'}</div>`;
+        container.innerHTML = `<div style="text-align:center; color:#555; margin-top:50px;">${filter === 'active' ? 'No active chats' : 'Archive empty'}</div>`;
         return;
     }
 
@@ -714,7 +714,7 @@ function renderChatList(filter) {
 }
 
 async function restoreChat(chatId) {
-    if (!confirm("Восстановить чат за 50 монет?")) return;
+    if (!confirm("Restore chat for 50 coins?")) return;
     
     try {
         const res = await fetch(CHAT_RESTORE_URL, {
@@ -728,7 +728,7 @@ async function restoreChat(chatId) {
             document.getElementById('user-balance').innerText = data.new_balance + ' 🪙';
             loadChatList('active'); 
         } else {
-            alert(data.msg === 'No money' ? "Недостаточно монет!" : "Ошибка");
+            alert(data.msg === 'No money' ? "Not enough coins!" : "Error");
         }
     } catch (e) { console.error(e); }
 }
@@ -782,14 +782,14 @@ function renderMessages(messages) {
             
             let btnHtml = '';
             if (isMe) {
-                btnHtml = `<button class="invite-btn" onclick="openGamePanel()">ВЕРНУТЬСЯ</button>`;
+                btnHtml = `<button class="invite-btn" onclick="openGamePanel()">RETURN TO GAME</button>`;
             } else {
                 btnHtml = `<button class="invite-btn" onclick="acceptGame()">ACCEPT</button>`;
             }
             
             div.innerHTML = `
                 <div class="invite-title">🔥 SYNC GAME</div>
-                <div class="invite-text">${isMe ? 'Вы пригласили сыграть' : 'Вас приглашают в игру'}</div>
+                <div class="invite-text">${isMe ? 'You invited to play' : 'Invited you to play'}</div>
                 ${btnHtml}
             `;
         } else {
@@ -828,7 +828,7 @@ async function sendMessage() {
         if (data.status === 'success') {
             fetchMessages(); 
         } else {
-            alert(data.msg || "Ошибка отправки");
+            alert(data.msg || "Send Error");
         }
     } catch (e) { console.error(e); }
 }
@@ -968,7 +968,7 @@ async function submitSyncAnswer(option) {
 // --- NEW FEATURES: SECOND CHANCE & INSTANT WRITE ---
 
 async function buySecondChance(targetId, name, photo) {
-    if (!confirm(`Использовать "Второй Шанс" за 100 монет? Это создаст чат с ${name}.`)) return;
+    if (!confirm(`Use "Second Chance" for 100 coins? This creates a chat with ${name}.`)) return;
 
     try {
         const res = await fetch(SECOND_CHANCE_URL, {
@@ -984,7 +984,7 @@ async function buySecondChance(targetId, name, photo) {
             forceExit(); 
             openChat(data.chat_id, name, photo, targetId);
         } else {
-            alert(data.msg === 'No money' ? "Недостаточно монет!" : "Ошибка: " + data.msg);
+            alert(data.msg === 'No money' ? "Not enough coins!" : "Error: " + data.msg);
         }
     } catch (e) { console.error(e); }
 }
@@ -1002,7 +1002,7 @@ async function openChatWithUser(targetId, name, photo) {
             forceExit(); 
             openChat(data.chat_id, name, photo, targetId);
         } else {
-            alert("Ошибка: Чат не найден");
+            alert("Error: Chat not found");
         }
     } catch (e) { console.error(e); }
 }
@@ -1037,7 +1037,7 @@ async function reportUser() {
         });
     } else {
         // Fallback for Desktop
-        reason = prompt("Причина жалобы (Спам, Оскорбления, 18+):");
+        reason = prompt("Reason (Spam, Abuse, 18+):");
         if (reason) {
             await sendReport(reason);
         }
@@ -1058,9 +1058,9 @@ async function sendReport(reason) {
         const data = await res.json();
         
         if (data.status === 'success') {
-            alert("Жалоба отправлена. Спасибо за бдительность!");
+            alert("Report sent. Thank you!");
         } else {
-            alert("Ошибка отправки жалобы.");
+            alert("Error sending report.");
         }
     } catch (e) { console.error(e); }
 }

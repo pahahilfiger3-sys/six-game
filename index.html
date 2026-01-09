@@ -29,7 +29,7 @@
             </div>
 
             <div class="main-content">
-                <!-- START BUTTON (Mapped to startSearching) -->
+                <!-- START BUTTON -->
                 <button class="start-button" onclick="startSearching()">
                     <div class="coin">
                         <span class="button-text">START</span>
@@ -41,7 +41,7 @@
                 Balance: <span class="balance-amount" id="user-balance">1000 🪙</span>
             </div>
 
-            <!-- NAVIGATION (Lobby: 1st Active) -->
+            <!-- NAVIGATION -->
             <div class="bottom-nav">
                 <div class="nav-item active" onclick="switchScreen('lobby')">
                     <svg class="nav-icon" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
@@ -81,39 +81,33 @@
         <!-- ==================== GAME SCREEN ==================== -->
         <div id="screen-game" class="screen">
             
-            <!-- Game Header -->
+            <!-- REFACTORED HEADER: SPOTLIGHT LOGIC -->
             <div class="game-header">
-                <div class="timer" id="game-timer">00:00</div>
-                <div class="round-info q-label">ROUND 1</div>
-            </div>
-
-            <!-- Question Card / Top Spotlight (CONCEPT A: THE FREQUENCY) -->
-            <div class="answer-display frequency-variant" id="top-bar">
-                <!-- Text Mode -->
-                <div id="q-box-content" style="display: flex; flex-direction: column; align-items: center; width: 100%;">
-                    <div class="typewriter-text" id="q-text-val">Loading Question...</div>
-                    <div class="hint-text" id="hint-text">TAP PLAYER TO LISTEN</div>
+                <div class="top-row">
+                    <div class="round-info q-label">ROUND 1</div>
+                    <div class="timer" id="game-timer">00:00</div>
+                    <div class="mini-exit" onclick="forceExit()">✖</div>
                 </div>
-
-                <!-- Audio Player Mode (Hidden by default) -->
-                <div id="player-box-content" style="display:none; width: 100%; flex-direction: column; align-items: center;">
-                    <div class="waveform-container equalizer" id="audio-visualizer">
-                        <div class="wave-bar"></div>
-                        <div class="wave-bar"></div>
-                        <div class="wave-bar"></div>
-                        <div class="wave-bar"></div>
-                        <div class="wave-bar"></div>
-                        <div class="wave-bar"></div>
-                        <div class="wave-bar"></div>
-                        <div class="wave-bar"></div>
+                
+                <div class="header-display-area">
+                    <!-- State 1: Question View (Default) -->
+                    <div id="question-view">
+                        <div class="question-text-header" id="q-text-val">Loading Question...</div>
+                        <div class="hint-text" id="hint-text">TAP PLAYER TO LISTEN</div>
                     </div>
-                    <div class="answer-text-display" style="margin-top: 10px;"></div>
+
+                    <!-- State 2: Spotlight View (Hidden) -->
+                    <div id="spotlight-view" class="hidden">
+                        <div class="spotlight-name" id="spotlight-name">PLAYER NAME</div>
+                        <div id="spotlight-content">
+                            <!-- Content injected by JS (Waveform or Text) -->
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <!-- Game Grid (JS injects .player-card here) -->
+            <!-- Game Grid -->
             <div class="arena-grid" id="table-grid">
-                <!-- SVG Layer for Voting Lines -->
                 <svg id="connections-layer" xmlns="http://www.w3.org/2000/svg">
                     <defs>
                         <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
@@ -129,10 +123,10 @@
             <!-- Toast Notification -->
             <div id="gift-info-toast" class="gift-toast">Select a Gift</div>
 
-            <!-- Game Controls -->
+            <!-- REFACTORED CONTROLS: GIFT BUTTON -->
             <div class="game-controls" id="controls">
                 
-                <!-- Left: Keyboard Input (NEW SVG) -->
+                <!-- Left: Keyboard -->
                 <div class="action-btn keyboard-btn" id="kb-btn" onclick="openTextInput()">
                     <svg viewBox="0 0 24 24">
                         <rect x="2" y="6" width="20" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/>
@@ -149,28 +143,49 @@
                     <svg class="mic-icon" viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/><path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
                 </div>
 
-                <!-- Right: Exit -->
-                <div class="action-btn leave-btn" onclick="forceExit()">
-                    <svg viewBox="0 0 24 24"><path d="M10.09 15.59L11.5 17l5-5-5-5-1.41 1.41L12.67 11H3v2h9.67l-2.58 2.59zM19 3H5c-1.11 0-2 .9-2 2v4h2V5h14v14H5v-4H3v4c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/></svg>
+                <!-- Right: Gift Button (Replaces Exit) -->
+                <div class="action-btn gift-menu-btn" onclick="openGiftModal()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="#ffd700" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="20 12 20 22 4 22 4 12"></polyline>
+                        <rect x="2" y="7" width="20" height="5"></rect>
+                        <line x1="12" y1="22" x2="12" y2="7"></line>
+                        <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"></path>
+                        <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"></path>
+                    </svg>
                 </div>
 
             </div>
 
-            <!-- Gifts Bar (Absolute Positioned above controls) -->
-            <div class="gifts-bar">
-                <div class="gift-btn" onclick="selectGift('heart')">
-                    <span class="gift-icon">❤️</span> <span class="gift-price">25</span>
-                </div>
-                <div class="gift-btn" onclick="selectGift('joker')">
-                    <span class="gift-icon">🃏</span> <span class="gift-price">50</span>
-                </div>
-                <div class="gift-btn" onclick="selectGift('spy')">
-                    <span class="gift-icon">👁</span> <span class="gift-price">100</span>
-                </div>
-                <div class="gift-btn" onclick="selectGift('xray')">
-                    <span class="gift-icon">☢️</span> <span class="gift-price">200</span>
+            <!-- NEW VERTICAL GIFT MODAL -->
+            <div id="gift-modal" class="modal-overlay">
+                <div class="gift-modal-content">
+                    <div class="gift-modal-title">SEND GIFT</div>
+                    <div class="gift-list">
+                        <div class="gift-item" onclick="selectGift('heart')">
+                            <span class="gift-icon">❤️</span>
+                            <span class="gift-name">LIKE</span>
+                            <span class="gift-price">25 🪙</span>
+                        </div>
+                        <div class="gift-item" onclick="selectGift('joker')">
+                            <span class="gift-icon">🃏</span>
+                            <span class="gift-name">JOKER</span>
+                            <span class="gift-price">50 🪙</span>
+                        </div>
+                        <div class="gift-item" onclick="selectGift('spy')">
+                            <span class="gift-icon">👁</span>
+                            <span class="gift-name">SPY</span>
+                            <span class="gift-price">100 🪙</span>
+                        </div>
+                        <div class="gift-item" onclick="selectGift('xray')">
+                            <span class="gift-icon">☢️</span>
+                            <span class="gift-name">X-RAY</span>
+                            <span class="gift-price">200 🪙</span>
+                        </div>
+                    </div>
+                    <button class="close-modal-btn" onclick="closeGiftModal()">CANCEL</button>
                 </div>
             </div>
+
         </div>
 
         <!-- ==================== CHAT LIST SCREEN ==================== -->
@@ -190,7 +205,7 @@
                 <!-- Chat items injected by JS -->
             </div>
 
-            <!-- Navigation (Chat List: 2nd Active) -->
+            <!-- Navigation -->
             <div class="bottom-nav">
                 <div class="nav-item" onclick="switchScreen('lobby')"><svg class="nav-icon" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg></div>
                 <div class="nav-item active" onclick="loadChatList()"><svg class="nav-icon" viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/></svg></div>
@@ -220,7 +235,7 @@
             <div class="input-area">
                 <div class="input-container">
                     <button class="input-icon-btn" onclick="sendGameInvite()">
-                        <svg class="input-icon" viewBox="0 0 24 24"><path d="M20 6h-2.18c.11-.31.18-.65.18-1 0-1.66-1.34-3-3-3-1.05 0-1.96.54-2.5 1.35l-.5.67-.5-.68C10.96 2.54 10.05 2 9 2 7.34 2 6 3.34 6 5c0 .35.07.69.18 1H4c-1.11 0-1.99.89-1.99 2L2 19c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2zm-5-2c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1.45-1 1-1zM9 4c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm11 15H4v-2h16v2zm0-5H4V8h5.08L7 10.83 8.62 12 11 8.76l1-1.36 1 1.36L15.38 12 17 10.83 14.92 8H20v6z"/></svg>
+                        <svg class="input-icon" viewBox="0 0 24 24"><path d="M20 6h-2.18c.11-.31.18-.65.18-1 0-1.66-1.34-3-3-3-1.05 0-1.96.54-2.5 1.35l-.5.67-.5-.68C10.96 2.54 10.05 2 9 2 7.34 2 6 3.34 6 5c0 .35.07.69.18 1H4c-1.11 0-1.99.89-1.99 2L2 19c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2zm-5-2c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1.45-1 1-1zM9 4c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1.45-1 1-1zm11 15H4v-2h16v2zm0-5H4V8h5.08L7 10.83 8.62 12 11 8.76l1-1.36 1 1.36L15.38 12 17 10.83 14.92 8H20v6z"/></svg>
                     </button>
                     <input type="text" class="message-input" id="chat-input" placeholder="Message...">
                     <button class="mic-btn-small" onclick="sendMessage()">
@@ -256,7 +271,6 @@
                 </button>
             </div>
 
-            <!-- SCROLLABLE CONTENT WRAPPER -->
             <div class="scroll-content">
                 <div class="stats-row">
                     <div class="stat-box">
@@ -301,7 +315,7 @@
                 </div>
             </div>
 
-            <!-- Navigation (Profile: 4th Active) -->
+            <!-- Navigation -->
             <div class="bottom-nav">
                 <div class="nav-item" onclick="switchScreen('lobby')"><svg class="nav-icon" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg></div>
                 <div class="nav-item" onclick="loadChatList()"><svg class="nav-icon" viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/></svg></div>
@@ -343,7 +357,7 @@
                 <button class="invite-btn" onclick="inviteFriend()">Copy Invite Link</button>
             </div>
 
-            <!-- Navigation (Shop: 3rd Active) -->
+            <!-- Navigation -->
             <div class="bottom-nav">
                 <div class="nav-item" onclick="switchScreen('lobby')"><svg class="nav-icon" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg></div>
                 <div class="nav-item" onclick="loadChatList()"><svg class="nav-icon" viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/></svg></div>
