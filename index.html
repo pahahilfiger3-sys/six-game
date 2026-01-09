@@ -121,7 +121,16 @@
             </div>
 
             <!-- Toast Notification -->
-            <div id="gift-info-toast" class="gift-toast">Select a Gift</div>
+            <div id="gift-sticky-bar" class="gift-sticky-bar hidden">
+                <div class="sticky-left-side">
+                    <div class="sticky-icon">🎁</div>
+                    <div class="sticky-info">
+                        <div class="sticky-title" id="sticky-gift-name">GIFT SELECTED</div>
+                        <div class="sticky-hint">Tap player to send</div>
+                    </div>
+                </div>
+                <div class="sticky-close-btn" onclick="cancelGiftSelection()">✖</div>
+            </div>
 
             <!-- REFACTORED CONTROLS: GIFT BUTTON -->
             <div class="game-controls" id="controls">

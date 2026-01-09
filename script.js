@@ -143,6 +143,7 @@ function forceExit() {
     closeGiftModal();
     giftToast.classList.remove('visible');
     stopPlayback();
+    cancelGiftSelection()
 }
 
 async function startSearching() {
@@ -454,11 +455,32 @@ function closeGiftModal() {
 }
 
 function selectGift(type) {
-    closeGiftModal();
+    // 1. Закрываем модальное окно (если открыто)
+    try {
+        document.getElementById('gift-modal').classList.remove('active');
+    } catch(e) {}
+
+    // 2. Запоминаем тип подарка
     selectedGiftType = type;
-    giftToast.innerText = GIFT_DESCRIPTIONS[type];
-    giftToast.classList.add('visible');
-    tg.HapticFeedback.impactOccurred('light');
+
+    // 3. Показываем Липкую Плашку
+    const bar = document.getElementById('gift-sticky-bar');
+    const title = document.getElementById('sticky-gift-name');
+    
+    if (bar && title) {
+        title.innerText = type.toUpperCase() + " SELECTED"; // Пишем "HEART SELECTED"
+        bar.classList.remove('hidden');
+    }
+    
+    // Вибрация
+    if (window.Telegram && Telegram.WebApp.HapticFeedback) {
+        Telegram.WebApp.HapticFeedback.selectionChanged();
+    }
+}
+function cancelGiftSelection() {
+    selectedGiftType = null;
+    const bar = document.getElementById('gift-sticky-bar');
+    if (bar) bar.classList.add('hidden'); // Скрываем плашку
 }
 
 async function sendGiftToPlayer(player, type) {
@@ -522,44 +544,61 @@ async function castVote(player) {
 }
 
 function activateSpotlight(player) {
+    // [ЗАЩИТА] Если выбран подарок — отправляем его и ВЫХОДИМ
+    if (selectedGiftType) {
+        console.log(`🎁 Sending gift ${selectedGiftType} to player ${player.id}`);
+        
+        // Тут твой код отправки на сервер (оставляем заглушку или твой вызов API)
+        // await sendGift(player.id, selectedGiftType);
+        
+        alert(`Gift ${selectedGiftType} sent to ${player.name}!`); // Временное уведомление
+        
+        // Сбрасываем выбор и прячем плашку
+        cancelGiftSelection(); 
+        
+        return; // <--- ВАЖНО: Останавливаем функцию, чтобы Spotlight не открылся!
+    }
+
+    // --- ДАЛЬШЕ ИДЕТ ОБЫЧНАЯ ЛОГИКА SPOTLIGHT (Не меняем её) ---
+    
     if (currentPlayerId === player.id) { stopPlayback(); return; }
-    if (currentAudio) currentAudio.pause();
+    if (currentAudio) { currentAudio.pause(); currentAudio = null; }
 
     currentPlayerId = player.id;
-    
-    // Toggle Header Views
-    document.getElementById('question-view').style.display = 'none';
-    document.getElementById('spotlight-view').classList.remove('hidden');
-    document.getElementById('spotlight-view').style.display = 'flex';
-    
-    // Set Name
-    document.getElementById('spotlight-name').innerText = player.name;
-    
-    const contentBox = document.getElementById('spotlight-content');
-    contentBox.innerHTML = ''; // Clear previous
 
-    // Update Player Cards (Ripple Effect)
+    // Подсветка карты
     document.querySelectorAll('.player-card').forEach(c => c.classList.remove('playing'));
     const card = document.getElementById(`player-${player.id}`);
     if (card) card.classList.add('playing');
 
+    // Переключение шапки (Вопрос -> Ответ)
+    document.getElementById('question-view').classList.add('hidden');
+    
+    const spotlightView = document.getElementById('spotlight-view');
+    const spotlightContent = document.getElementById('spotlight-content');
+    const spotlightName = document.getElementById('spotlight-name');
+    
+    spotlightView.classList.remove('hidden');
+    spotlightName.innerText = player.name;
+    spotlightContent.innerHTML = "";
+
+    // Контент ответа (Аудио или Текст)
     if (player.answer_type === 'audio') {
-        // Inject Waveform HTML
-        contentBox.innerHTML = `
+        spotlightContent.innerHTML = `
             <div class="waveform-container active">
-                <div class="wave-bar"></div><div class="wave-bar"></div>
-                <div class="wave-bar"></div><div class="wave-bar"></div>
-                <div class="wave-bar"></div><div class="wave-bar"></div>
-                <div class="wave-bar"></div>
-            </div>
-        `;
+                <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
+                <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
+            </div>`;
         
         currentAudio = new Audio(player.answer_content);
         currentAudio.play();
         currentAudio.onended = stopPlayback;
     } else {
-        // Inject Text HTML
-        contentBox.innerHTML = `<div class="typewriter-text">"${player.answer_content}"</div>`;
+        const textDiv = document.createElement('div');
+        textDiv.className = 'typewriter-text';
+        textDiv.style.whiteSpace = 'pre-wrap';
+        textDiv.innerText = player.answer_content; // Используем innerText для простоты
+        spotlightContent.appendChild(textDiv);
     }
 }
 
