@@ -82,15 +82,26 @@ const gridContainer = document.getElementById('table-grid');
 const svgLayer = document.getElementById('connections-layer');
 const profileModal = document.getElementById('profile-modal');
 const profileImg = document.getElementById('profile-large-img');
-const giftToast = document.getElementById('gift-info-toast');
 const gameBottomSheet = document.getElementById('game-bottom-sheet');
 const giftModal = document.getElementById('gift-modal');
 
+// --- GIFT CONFIGURATION (NO JOKER) ---
 const GIFT_DESCRIPTIONS = {
     'heart': "❤️ LIKE: Tap a player to send",
-    'joker': "🃏 JOKER: Tap a player to send",
     'spy': "👁 SPY: Tap a player to reveal photo",
     'xray': "☢️ X-RAY: Tap a player to reveal all"
+};
+
+const GIFT_ICONS = {
+    'heart': '<path fill="currentColor" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>',
+    'spy': '<path fill="currentColor" d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>',
+    'xray': '<path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-5.5-2.5l7.51-3.49L17.5 6.5 9.99 9.99 6.5 17.5zm5.5-6.6c.61 0 1.1.49 1.1 1.1s-.49 1.1-1.1 1.1-1.1-.49-1.1-1.1.49-1.1 1.1-1.1z"/>'
+};
+
+const GIFT_COLORS = {
+    'heart': 'var(--color-heart)',
+    'spy': 'var(--color-spy)',
+    'xray': 'var(--color-xray)'
 };
 
 // --- NAVIGATION ---
@@ -141,7 +152,6 @@ function forceExit() {
     resetSVG();
     closeProfileModal();
     closeGiftModal();
-    giftToast.classList.remove('visible');
     stopPlayback();
     cancelGiftSelection()
 }
@@ -455,32 +465,40 @@ function closeGiftModal() {
 }
 
 function selectGift(type) {
-    // 1. Закрываем модальное окно (если открыто)
+    // 1. Close Modal
     try {
         document.getElementById('gift-modal').classList.remove('active');
     } catch(e) {}
 
-    // 2. Запоминаем тип подарка
+    // 2. Set Type
     selectedGiftType = type;
 
-    // 3. Показываем Липкую Плашку
+    // 3. Show Sticky Bar with Dynamic Icon
     const bar = document.getElementById('gift-sticky-bar');
     const title = document.getElementById('sticky-gift-name');
+    const iconContainer = document.querySelector('.sticky-icon');
     
-    if (bar && title) {
-        title.innerText = type.toUpperCase() + " SELECTED"; // Пишем "HEART SELECTED"
+    if (bar && title && iconContainer) {
+        title.innerText = type.toUpperCase() + " SELECTED";
+        
+        // Inject SVG
+        iconContainer.innerHTML = `<svg viewBox="0 0 24 24">${GIFT_ICONS[type]}</svg>`;
+        // Set Color
+        iconContainer.style.color = GIFT_COLORS[type];
+        
         bar.classList.remove('hidden');
     }
     
-    // Вибрация
+    // Haptic
     if (window.Telegram && Telegram.WebApp.HapticFeedback) {
         Telegram.WebApp.HapticFeedback.selectionChanged();
     }
 }
+
 function cancelGiftSelection() {
     selectedGiftType = null;
     const bar = document.getElementById('gift-sticky-bar');
-    if (bar) bar.classList.add('hidden'); // Скрываем плашку
+    if (bar) bar.classList.add('hidden'); 
 }
 
 async function sendGiftToPlayer(player, type) {
@@ -506,9 +524,6 @@ async function sendGiftToPlayer(player, type) {
             if (type === 'spy') {
                 setTimeout(() => openProfileModal(player.photo), 500);
             }
-            else if (type === 'joker') {
-                alert("🃏 JOKER! Question changed!");
-            }
             else if (type === 'xray') {
                 isXrayActive = true;
                 document.querySelectorAll('.avatar.blur-mask').forEach(el => {
@@ -523,7 +538,7 @@ async function sendGiftToPlayer(player, type) {
     } catch (e) { console.error(e); }
     
     selectedGiftType = null;
-    giftToast.classList.remove('visible');
+    cancelGiftSelection(); // Hide bar immediately
 }
 
 // --- CORE ACTIONS ---
@@ -544,34 +559,25 @@ async function castVote(player) {
 }
 
 function activateSpotlight(player) {
-    // [ЗАЩИТА] Если выбран подарок — отправляем его и ВЫХОДИМ
+    // [PROTECTION] If gift selected, send it and exit
     if (selectedGiftType) {
-        console.log(`🎁 Sending gift ${selectedGiftType} to player ${player.id}`);
-        
-        // Тут твой код отправки на сервер (оставляем заглушку или твой вызов API)
-        // await sendGift(player.id, selectedGiftType);
-        
-        alert(`Gift ${selectedGiftType} sent to ${player.name}!`); // Временное уведомление
-        
-        // Сбрасываем выбор и прячем плашку
-        cancelGiftSelection(); 
-        
-        return; // <--- ВАЖНО: Останавливаем функцию, чтобы Spotlight не открылся!
+        sendGiftToPlayer(player, selectedGiftType);
+        return; 
     }
 
-    // --- ДАЛЬШЕ ИДЕТ ОБЫЧНАЯ ЛОГИКА SPOTLIGHT (Не меняем её) ---
+    // --- SPOTLIGHT LOGIC ---
     
     if (currentPlayerId === player.id) { stopPlayback(); return; }
     if (currentAudio) { currentAudio.pause(); currentAudio = null; }
 
     currentPlayerId = player.id;
 
-    // Подсветка карты
+    // Highlight Card
     document.querySelectorAll('.player-card').forEach(c => c.classList.remove('playing'));
     const card = document.getElementById(`player-${player.id}`);
     if (card) card.classList.add('playing');
 
-    // Переключение шапки (Вопрос -> Ответ)
+    // Toggle Header
     document.getElementById('question-view').classList.add('hidden');
     
     const spotlightView = document.getElementById('spotlight-view');
@@ -582,7 +588,7 @@ function activateSpotlight(player) {
     spotlightName.innerText = player.name;
     spotlightContent.innerHTML = "";
 
-    // Контент ответа (Аудио или Текст)
+    // Content (Audio or Text)
     if (player.answer_type === 'audio') {
         spotlightContent.innerHTML = `
             <div class="waveform-container active">
@@ -597,7 +603,7 @@ function activateSpotlight(player) {
         const textDiv = document.createElement('div');
         textDiv.className = 'typewriter-text';
         textDiv.style.whiteSpace = 'pre-wrap';
-        textDiv.innerText = player.answer_content; // Используем innerText для простоты
+        textDiv.innerText = player.answer_content; 
         spotlightContent.appendChild(textDiv);
     }
 }
@@ -714,6 +720,10 @@ async function loadChatList(filter = 'active') {
 }
 
 function renderChatList(filter) {
+    // Update Tab UI
+    document.getElementById('tab-active').classList.toggle('active', filter === 'active');
+    document.getElementById('tab-archive').classList.toggle('active', filter === 'archived');
+
     const container = document.getElementById('chat-list-container');
     container.innerHTML = '';
     
@@ -816,20 +826,17 @@ function renderMessages(messages) {
             div.className = 'msg-bubble msg-system';
             div.innerText = m.text;
         } else if (m.type === 'game_invite') {
-            div.className = 'msg-invite';
+            // --- NEW GLASS DESIGN FOR INVITE ---
+            div.className = 'glass-bubble';
             const isMe = m.sender_id === USER_ID;
             
-            let btnHtml = '';
-            if (isMe) {
-                btnHtml = `<button class="invite-btn" onclick="openGamePanel()">RETURN TO GAME</button>`;
-            } else {
-                btnHtml = `<button class="invite-btn" onclick="acceptGame()">ACCEPT</button>`;
-            }
+            const btnText = isMe ? 'RETURN TO GAME' : 'JOIN GAME';
+            const clickAction = isMe ? 'openGamePanel()' : 'acceptGame()';
             
             div.innerHTML = `
-                <div class="invite-title">🔥 SYNC GAME</div>
-                <div class="invite-text">${isMe ? 'You invited to play' : 'Invited you to play'}</div>
-                ${btnHtml}
+                <div class="glass-title">SYNC GAME</div>
+                <div class="glass-subtitle">${isMe ? 'Waiting for opponent...' : 'Match answers to win'}</div>
+                <button class="glass-btn" onclick="${clickAction}">${btnText}</button>
             `;
         } else {
             const isMe = m.sender_id === USER_ID;
@@ -970,7 +977,8 @@ async function pollSyncGame() {
             optionsContainer.innerHTML = "";
             data.question.options.forEach((optText, index) => {
                 const btn = document.createElement('button');
-                btn.className = 'sync-opt-btn';
+                // --- NEW GLASS CLASS ---
+                btn.className = 'glass-opt-btn';
                 btn.innerText = optText;
                 btn.onclick = () => submitSyncAnswer(index);
                 

@@ -11,7 +11,6 @@
     
     /* Gift Colors */
     --color-heart: #ff0055;
-    --color-joker: #bd00ff;
     --color-spy: #ffd700;
     --color-xray: #00f3ff;
 }
@@ -361,15 +360,6 @@ body {
 /* Gift Button */
 .gift-menu-btn svg { stroke: #ffd700; fill: none; }
 
-/* Gift Toast */
-.gift-toast {
-    position: absolute; bottom: 120px; left: 50%; transform: translateX(-50%);
-    background: rgba(0,0,0,0.9); border: 1px solid var(--neon-blue);
-    color: white; padding: 10px 20px; border-radius: 20px; font-size: 14px;
-    opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 2000;
-}
-.gift-toast.visible { opacity: 1; }
-
 /* --- VERTICAL GIFT MODAL --- */
 #gift-modal {
     position: absolute; top: 0; left: 0; width: 100%; height: 100%;
@@ -383,24 +373,33 @@ body {
     display: flex; flex-direction: column; align-items: center;
     box-shadow: 0 0 30px rgba(255, 215, 0, 0.2);
 }
-.gift-modal-title {
-    font-family: 'Orbitron', sans-serif; font-size: 20px; font-weight: 800;
-    color: var(--gold); margin-bottom: 20px; letter-spacing: 2px;
+
+/* NEW VERTICAL MODAL STYLES */
+.vertical-modal { width: 100%; display: flex; flex-direction: column; gap: 15px; }
+.modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.modal-title { font-family: 'Orbitron', sans-serif; font-size: 18px; font-weight: 800; color: var(--gold); letter-spacing: 1px; }
+.modal-close { font-size: 20px; color: #666; cursor: pointer; padding: 5px; }
+
+.vertical-list { display: flex; flex-direction: column; gap: 12px; }
+.v-item { 
+    display: flex; align-items: center; padding: 12px; 
+    background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); 
+    border-radius: 16px; transition: 0.2s; cursor: pointer;
 }
-.gift-list { width: 100%; display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px; }
-.gift-item {
-    display: flex; align-items: center; justify-content: space-between;
-    background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1);
-    padding: 15px; border-radius: 12px; cursor: pointer; transition: all 0.2s;
+.v-item:active { background: rgba(255,255,255,0.1); transform: scale(0.98); }
+
+.v-icon-box { 
+    width: 40px; height: 40px; border-radius: 12px; border: 1px solid currentColor; 
+    display: flex; align-items: center; justify-content: center; margin-right: 15px; 
+    background: rgba(0,0,0,0.3); 
 }
-.gift-item:active { background: rgba(255, 215, 0, 0.1); border-color: var(--gold); }
-.gift-icon { font-size: 24px; margin-right: 15px; }
-.gift-name { flex: 1; font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 16px; color: #fff; }
-.gift-price { font-family: 'Orbitron', sans-serif; font-size: 14px; color: var(--gold); font-weight: 700; }
-.close-modal-btn {
-    background: transparent; border: 1px solid #666; color: #888;
-    padding: 10px 30px; border-radius: 20px; font-weight: 700; cursor: pointer;
-}
+.v-icon-box svg { width: 24px; height: 24px; }
+
+.v-info { flex: 1; display: flex; flex-direction: column; }
+.v-name { font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 14px; margin-bottom: 2px; }
+.v-desc { font-size: 11px; color: rgba(255,255,255,0.5); }
+.v-price { font-family: 'Orbitron', sans-serif; font-size: 14px; color: #fff; font-weight: 700; }
+
 
 /* --- CHAT LIST --- */
 .screen-title {
@@ -576,28 +575,149 @@ body {
 }
 .rule-title { font-weight: 800; color: var(--neon-blue); margin-bottom: 5px; display: block; font-family: 'Orbitron', sans-serif; }
 
-/* --- GAME BOTTOM SHEET --- */
+/* --- GAME BOTTOM SHEET (UPDATED GLASS DESIGN) --- */
 #game-bottom-sheet {
     position: absolute; bottom: 0; left: 0; width: 100%; height: 350px;
-    background: rgba(10, 10, 16, 0.98); border-top: 1px solid var(--gold);
-    border-radius: 20px 20px 0 0; transform: translateY(100%);
+    transform: translateY(100%);
     transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); z-index: 200;
-    display: flex; flex-direction: column; box-shadow: 0 -5px 30px rgba(0,0,0,0.8);
+    display: flex; flex-direction: column;
 }
 #game-bottom-sheet.active { transform: translateY(0); }
-.game-sheet-header { height: 50px; display: flex; justify-content: space-between; align-items: center; padding: 0 20px; border-bottom: 1px solid rgba(255,255,255,0.1); }
-.game-lives { font-size: 17px; letter-spacing: 2px; }
-.game-round { color: var(--gold); font-weight: 800; font-size: 15px; font-family: 'Orbitron', sans-serif; }
-.game-close { font-size: 20px; color: #666; cursor: pointer; }
-.game-sheet-body { flex-grow: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
-.sync-question { font-size: 20px; font-weight: 800; text-align: center; margin-bottom: 30px; color: white; }
-.sync-options { display: flex; flex-direction: column; gap: 10px; width: 100%; justify-content: center; align-items: center; }
-.sync-opt-btn {
-    width: 100%; max-width: 300px; height: 50px; background: rgba(255,255,255,0.05);
-    border: 1px solid var(--neon-blue); border-radius: 15px; color: white; font-size: 18px;
-    font-family: 'Rajdhani', sans-serif; font-weight: 700; cursor: pointer;
+
+/* New Glass Sheet Styles */
+.glass-sheet {
+    background: rgba(10, 10, 10, 0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-top: 1px solid rgba(255, 215, 0, 0.3);
+    border-radius: 30px 30px 0 0;
+    box-shadow: 0 -10px 40px rgba(0,0,0,0.5);
 }
-.sync-status { margin-top: 20px; font-size: 15px; color: #888; font-style: italic; }
+
+.glass-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 30px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.glass-lives {
+    font-size: 18px;
+    filter: drop-shadow(0 0 5px #ff0055);
+}
+.glass-lives.beating { animation: heartbeat 1.5s infinite; }
+
+.glass-round {
+    font-family: 'Orbitron', sans-serif;
+    color: #fbbf24;
+    font-size: 14px;
+    letter-spacing: 2px;
+}
+
+.game-close { font-size: 20px; color: #666; cursor: pointer; }
+
+.glass-body {
+    padding: 30px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex-grow: 1;
+}
+
+.glass-question {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    text-align: center;
+    color: #fff;
+    margin-bottom: 30px;
+    line-height: 1.4;
+}
+
+.glass-opt-btn {
+    width: 100%;
+    max-width: 320px;
+    padding: 16px;
+    margin-bottom: 12px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    color: #fff;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+}
+
+.glass-opt-btn:active {
+    background: rgba(251, 191, 36, 0.1);
+    border-color: #fbbf24;
+    transform: scale(0.98);
+}
+.glass-opt-btn.selected {
+    background: rgba(251, 191, 36, 0.2);
+    border-color: #fbbf24;
+    color: #fbbf24;
+}
+
+.sync-status { margin-top: 15px; font-size: 15px; color: rgba(255,255,255,0.5); font-style: italic; }
+
+/* --- GLASS BUBBLE (INVITE) --- */
+.glass-bubble {
+    width: 85%;
+    max-width: 280px;
+    padding: 24px;
+    border-radius: 24px;
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    align-self: center;
+    margin: 10px 0;
+}
+
+.glass-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 24px;
+    font-weight: 900;
+    background: linear-gradient(90deg, #fde047, #fbbf24, #eab308);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 8px;
+    letter-spacing: 2px;
+}
+
+.glass-subtitle {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.6);
+    margin-bottom: 20px;
+}
+
+.glass-btn {
+    width: 100%;
+    padding: 14px;
+    border-radius: 16px;
+    border: none;
+    background: linear-gradient(90deg, #fde047, #fbbf24, #eab308);
+    color: #000;
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 800;
+    font-size: 14px;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(251, 191, 36, 0.3);
+    transition: transform 0.2s;
+    animation: pulse-gold 2s infinite;
+}
+.glass-btn:active { transform: scale(0.96); }
 
 /* --- MODAL --- */
 #profile-modal {
@@ -613,9 +733,6 @@ body {
 .fx-heart .avatar-wrapper { animation: heartbeat 1s infinite; border-color: var(--color-heart); box-shadow: 0 0 20px var(--color-heart); }
 @keyframes heartbeat { 0% { transform: scale(1); } 25% { transform: scale(1.1); } 40% { transform: scale(1); } 60% { transform: scale(1.1); } 100% { transform: scale(1); } }
 
-.fx-joker .avatar-wrapper { animation: shake 0.5s both; border-color: var(--color-joker); }
-@keyframes shake { 10%, 90% { transform: translate3d(-1px, 0, 0); } 20%, 80% { transform: translate3d(2px, 0, 0); } }
-
 .fx-spy .avatar-wrapper { animation: spy-scan 1s ease-in-out; border-color: var(--color-spy); }
 @keyframes spy-scan { 0% { filter: brightness(1); } 50% { filter: invert(1); } 100% { filter: brightness(1); } }
 
@@ -623,24 +740,25 @@ body {
 @keyframes xray-flash { from { opacity: 1; } to { opacity: 0.7; } }
 
 /* ========================================= */
-/* STICKY GIFT BAR (FIXED)                  */
+/* STICKY GIFT BAR (UPDATED - DYNAMIC ISLAND) */
 /* ========================================= */
 
 .gift-sticky-bar {
     position: absolute;
-    bottom: 90px; /* Чуть выше нижнего меню */
+    bottom: 130px; /* UPDATED: Higher to clear nav */
     left: 50%;
     transform: translateX(-50%);
-    width: 94%;
-    max-width: 400px;
-    background: rgba(10, 10, 12, 0.95); /* Почти черный фон */
+    width: auto; /* UPDATED: Auto width */
+    min-width: 220px; /* UPDATED */
+    background: rgba(10, 10, 10, 0.95); /* UPDATED: Blacker */
     border: 1px solid var(--gold);
-    border-radius: 12px;
-    padding: 10px 15px;
-    display: flex;
+    border-radius: 50px; /* UPDATED: Pill shape */
+    padding: 8px 20px; /* UPDATED */
+    display: inline-flex; /* UPDATED */
     align-items: center;
-    justify-content: space-between; /* Разносим текст и крестик по краям */
-    box-shadow: 0 0 20px rgba(255, 215, 0, 0.2); /* Золотое свечение */
+    justify-content: space-between;
+    gap: 15px;
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.2);
     z-index: 900;
     opacity: 0;
     pointer-events: none;
@@ -650,7 +768,7 @@ body {
 /* Когда плашка активна */
 .gift-sticky-bar:not(.hidden) {
     opacity: 1;
-    bottom: 110px; /* Эффект всплытия */
+    bottom: 140px; /* Эффект всплытия */
     pointer-events: all;
 }
 
@@ -661,9 +779,11 @@ body {
 }
 
 .sticky-icon {
-    font-size: 24px;
-    filter: drop-shadow(0 0 5px var(--gold));
+    width: 32px; height: 32px;
+    display: flex; align-items: center; justify-content: center;
+    filter: drop-shadow(0 0 5px currentColor);
 }
+.sticky-icon svg { width: 24px; height: 24px; }
 
 .sticky-title {
     font-family: 'Orbitron', sans-serif;
@@ -682,8 +802,8 @@ body {
 
 /* Кнопка Крестик */
 .sticky-close-btn {
-    width: 32px;
-    height: 32px;
+    width: 28px;
+    height: 28px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -696,7 +816,7 @@ body {
 }
 
 .sticky-close-btn:active {
-    background: rgba(255, 0, 85, 0.2); /* Красная подсветка при нажатии */
+    background: rgba(255, 0, 85, 0.2);
     color: #fff;
     transform: scale(0.9);
 }
