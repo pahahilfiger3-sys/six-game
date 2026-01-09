@@ -385,17 +385,7 @@ function renderPlayers(players, phase) {
         
         const badgePosClass = isLeftTeam ? 'pos-right' : 'pos-left';
 
-        let actionButtonHtml = '';
-        if (phase === 'results' && !isMe && lastVotesMap) {
-            const theyVotedForMe = lastVotesMap[p.id] === USER_ID;
-            const iVotedForThem = lastVotesMap[USER_ID] === p.id;
-            
-            if (theyVotedForMe && iVotedForThem) {
-                actionButtonHtml = `<button class="result-action-btn btn-write" onclick="event.stopPropagation(); openChatWithUser(${p.id}, '${p.name}', '${p.photo}')">💬 WRITE</button>`;
-            } else if (theyVotedForMe && !iVotedForThem) {
-                actionButtonHtml = `<button class="result-action-btn btn-second-chance" onclick="event.stopPropagation(); buySecondChance(${p.id}, '${p.name}', '${p.photo}')">⚡️ 2ND CHANCE (100 🪙)</button>`;
-            }
-        }
+        // REMOVED: Action buttons from grid. Now handled in modal.
 
         const showCheck = p.has_answer && phase !== 'voting' && phase !== 'results';
 
@@ -405,7 +395,6 @@ function renderPlayers(players, phase) {
                 <div class="status-check ${badgePosClass}" style="display:${showCheck ? 'flex' : 'none'}">
                     <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
                 </div>
-                ${actionButtonHtml}
             </div>
             <div class="name-tag" style="${isMe ? 'color:var(--neon-blue)' : ''}">${isMe ? 'YOU' : p.name}</div>
         `;
@@ -416,7 +405,8 @@ function renderPlayers(players, phase) {
             if (phase === 'listening' && p.has_answer) activateSpotlight(p);
             if (phase === 'voting') castVote(p);
             if (phase === 'results') {
-                 if(confirm("Buy SPY view for 100 coins?")) sendGiftToPlayer(p, 'spy');
+                 // NEW: Open Modal with Actions
+                 openPlayerResultModal(p);
             }
         };
 
@@ -442,12 +432,50 @@ async function openTextInput() {
     } catch(e) { console.error(e); }
 }
 
-// --- SPY MODAL ---
+// --- SPY MODAL & PLAYER RESULT MODAL ---
 
 function openProfileModal(url) {
     if (!url) return;
     profileImg.src = url;
+    // Clear actions by default (for generic use)
+    document.getElementById('profile-actions').innerHTML = '';
     profileModal.classList.add('active');
+}
+
+function openPlayerResultModal(player) {
+    // 1. Show Image
+    openProfileModal(player.photo);
+    
+    // 2. Generate Actions
+    const actionsDiv = document.getElementById('profile-actions');
+    actionsDiv.innerHTML = '';
+
+    if (!lastVotesMap) return;
+
+    const theyVotedForMe = lastVotesMap[player.id] === USER_ID;
+    const iVotedForThem = lastVotesMap[USER_ID] === player.id;
+
+    if (theyVotedForMe && iVotedForThem) {
+        // Mutual Match -> Write
+        const btn = document.createElement('button');
+        btn.className = 'action-btn-large btn-action-chat';
+        btn.innerHTML = '💬 WRITE MESSAGE';
+        btn.onclick = () => {
+             closeProfileModal();
+             openChatWithUser(player.id, player.name, player.photo);
+        };
+        actionsDiv.appendChild(btn);
+    } else if (theyVotedForMe && !iVotedForThem) {
+        // They liked me -> 2nd Chance
+        const btn = document.createElement('button');
+        btn.className = 'action-btn-large btn-action-chance';
+        btn.innerHTML = '⚡️ 2ND CHANCE (100 🪙)';
+        btn.onclick = () => {
+            closeProfileModal();
+            buySecondChance(player.id, player.name, player.photo);
+        };
+        actionsDiv.appendChild(btn);
+    }
 }
 
 function closeProfileModal() {
@@ -654,9 +682,10 @@ async function toggleRecording() {
 // --- SVG HELPERS ---
 
 function resetSVG() {
+    // UPDATED: Arrowhead match color to GOLD (#ffd700)
     svgLayer.innerHTML = `<defs>
         <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#00f3ff" /></marker>
-        <marker id="arrowhead-match" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#00ff88" /></marker>
+        <marker id="arrowhead-match" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#ffd700" /></marker>
     </defs>`;
 }
 

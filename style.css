@@ -283,9 +283,16 @@ body {
     pointer-events: none; z-index: 0;
 }
 .line-normal { stroke: var(--neon-blue); stroke-width: 2; opacity: 0.6; stroke-linecap: round; }
+
+/* UPDATED MATCH ARROW STYLE */
 .line-match {
-    stroke: var(--neon-green); stroke-width: 4; opacity: 1; stroke-linecap: round;
-    filter: drop-shadow(0 0 8px var(--neon-green)); stroke-dasharray: 10; animation: dash 1s linear infinite;
+    stroke: var(--gold); /* Gold */
+    stroke-width: 2; /* Thin */
+    opacity: 1;
+    stroke-linecap: round;
+    filter: drop-shadow(0 0 5px var(--gold)); /* Gold Glow */
+    stroke-dasharray: 10;
+    animation: dash 1s linear infinite;
 }
 @keyframes dash { to { stroke-dashoffset: -20; } }
 
@@ -320,14 +327,6 @@ body {
     box-shadow: 0 0 10px var(--neon-green); display: flex; align-items: center; justify-content: center; z-index: 50;
 }
 .status-check svg { width: 12px; height: 12px; fill: none; stroke: var(--neon-green); stroke-width: 3; }
-.result-action-btn {
-    position: absolute; bottom: -15px; left: 50%; transform: translateX(-50%);
-    padding: 4px 8px; border-radius: 20px; font-size: 10px; font-weight: 700;
-    border: none; cursor: pointer; z-index: 200; white-space: nowrap;
-    font-family: 'Rajdhani', sans-serif; text-transform: uppercase;
-}
-.btn-write { background: var(--neon-green); color: black; box-shadow: 0 0 10px var(--neon-green); }
-.btn-second-chance { background: var(--gold); color: black; box-shadow: 0 0 10px var(--gold); }
 
 /* Game Controls Bar */
 .game-controls {
@@ -727,7 +726,60 @@ body {
 }
 #profile-modal.active { display: flex; }
 #profile-large-img { width: 85%; max-width: 400px; border-radius: 20px; border: 2px solid var(--neon-blue); }
-.modal-close { position: absolute; top: 20px; right: 20px; font-size: 30px; color: white; cursor: pointer; }
+.modal-close { position: absolute; top: 20px; right: 20px; font-size: 30px; color: white; cursor: pointer; z-index: 10002; }
+
+/* --- MODAL ACTIONS (NEW) --- */
+.modal-action-bar {
+    position: absolute;
+    bottom: 40px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 90%;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    z-index: 10001;
+}
+
+.action-btn-large {
+    width: 100%;
+    padding: 18px;
+    border-radius: 16px;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 16px;
+    font-weight: 800;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    cursor: pointer;
+    backdrop-filter: blur(10px);
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.btn-action-chat {
+    background: rgba(0, 243, 255, 0.1);
+    border: 1px solid var(--neon-blue);
+    color: var(--neon-blue);
+    box-shadow: 0 0 15px rgba(0, 243, 255, 0.2);
+}
+.btn-action-chat:active {
+    background: rgba(0, 243, 255, 0.3);
+    transform: scale(0.98);
+}
+
+.btn-action-chance {
+    background: rgba(255, 215, 0, 0.1);
+    border: 1px solid var(--gold);
+    color: var(--gold);
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.2);
+}
+.btn-action-chance:active {
+    background: rgba(255, 215, 0, 0.3);
+    transform: scale(0.98);
+}
 
 /* --- FX ANIMATIONS --- */
 .fx-heart .avatar-wrapper { animation: heartbeat 1s infinite; border-color: var(--color-heart); box-shadow: 0 0 20px var(--color-heart); }
