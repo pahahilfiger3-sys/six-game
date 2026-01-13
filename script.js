@@ -385,8 +385,6 @@ function renderPlayers(players, phase) {
         
         const badgePosClass = isLeftTeam ? 'pos-right' : 'pos-left';
 
-        // REMOVED: Action buttons from grid. Now handled in modal.
-
         const showCheck = p.has_answer && phase !== 'voting' && phase !== 'results';
 
         card.innerHTML = `
@@ -405,8 +403,8 @@ function renderPlayers(players, phase) {
             if (phase === 'listening' && p.has_answer) activateSpotlight(p);
             if (phase === 'voting') castVote(p);
             if (phase === 'results') {
-                 // NEW: Open Modal with Actions
-                 openPlayerResultModal(p);
+                 // NEW: Open Stoic Modal
+                 openStoicModal(p);
             }
         };
 
@@ -432,43 +430,49 @@ async function openTextInput() {
     } catch(e) { console.error(e); }
 }
 
-// --- SPY MODAL & PLAYER RESULT MODAL ---
+// --- SPY MODAL & STOIC MODAL ---
 
 function openProfileModal(url) {
     if (!url) return;
-    profileImg.src = url;
-    // Clear actions by default (for generic use)
-    document.getElementById('profile-actions').innerHTML = '';
-    profileModal.classList.add('active');
+    document.getElementById('profile-large-img').src = url;
+    // Clear actions for generic view
+    document.getElementById('modal-actions-container').innerHTML = '';
+    document.getElementById('profile-modal').classList.add('active');
 }
 
-function openPlayerResultModal(player) {
-    // 1. Show Image
-    openProfileModal(player.photo);
+function openStoicModal(player) {
+    // 1. Set Image
+    const img = document.getElementById('profile-large-img');
+    img.src = player.photo;
     
-    // 2. Generate Actions
-    const actionsDiv = document.getElementById('profile-actions');
+    // 2. Open Modal
+    const modal = document.getElementById('profile-modal');
+    modal.classList.add('active');
+
+    // 3. Generate Actions
+    const actionsDiv = document.getElementById('modal-actions-container');
     actionsDiv.innerHTML = '';
 
     if (!lastVotesMap) return;
 
     const theyVotedForMe = lastVotesMap[player.id] === USER_ID;
     const iVotedForThem = lastVotesMap[USER_ID] === player.id;
+    const isMatch = theyVotedForMe && iVotedForThem;
 
-    if (theyVotedForMe && iVotedForThem) {
+    if (isMatch) {
         // Mutual Match -> Write
         const btn = document.createElement('button');
-        btn.className = 'action-btn-large btn-action-chat';
+        btn.className = 'stoic-btn btn-write';
         btn.innerHTML = '💬 WRITE MESSAGE';
         btn.onclick = () => {
              closeProfileModal();
              openChatWithUser(player.id, player.name, player.photo);
         };
         actionsDiv.appendChild(btn);
-    } else if (theyVotedForMe && !iVotedForThem) {
-        // They liked me -> 2nd Chance
+    } else {
+        // No Match (or one-sided) -> 2nd Chance
         const btn = document.createElement('button');
-        btn.className = 'action-btn-large btn-action-chance';
+        btn.className = 'stoic-btn btn-chance';
         btn.innerHTML = '⚡️ 2ND CHANCE (100 🪙)';
         btn.onclick = () => {
             closeProfileModal();
