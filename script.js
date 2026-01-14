@@ -107,30 +107,19 @@ const GIFT_COLORS = {
 // --- NAVIGATION ---
 
 function switchScreen(screenName) {
+    // 1. Скрываем все экраны
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
     
-    if (screenName === 'lobby') {
-        screenLobby.classList.add('active');
-        document.querySelector('.nav-item:nth-child(1)').classList.add('active');
-    } else if (screenName === 'chatList') {
-        screenChatList.classList.add('active');
-        document.querySelector('.nav-item:nth-child(2)').classList.add('active');
-    } else if (screenName === 'chatRoom') {
-        screenChatRoom.classList.add('active');
-    } else if (screenName === 'profile') {
-        screenProfile.classList.add('active');
-        document.querySelector('.nav-item:nth-child(4)').classList.add('active');
-    } else if (screenName === 'shop') {
-        screenShop.classList.add('active');
-        document.querySelector('.nav-item:nth-child(3)').classList.add('active');
-    } else if (screenName === 'rules') {
-        screenRules.classList.add('active');
-    } else if (screenName === 'game') {
-        screenGame.classList.add('active');
-    } else if (screenName === 'processing') {
-        screenProcessing.classList.add('active');
-    }
+    // 2. Показываем нужный экран
+    // ПРИМЕЧАНИЕ: Мы больше не трогаем .nav-item, так как они жестко прописаны в HTML
+    if (screenName === 'lobby') screenLobby.classList.add('active');
+    else if (screenName === 'chatList') screenChatList.classList.add('active');
+    else if (screenName === 'chatRoom') screenChatRoom.classList.add('active');
+    else if (screenName === 'profile') screenProfile.classList.add('active');
+    else if (screenName === 'shop') screenShop.classList.add('active');
+    else if (screenName === 'rules') screenRules.classList.add('active');
+    else if (screenName === 'game') screenGame.classList.add('active');
+    else if (screenName === 'processing') screenProcessing.classList.add('active');
 }
 
 function forceExit() {
@@ -1224,4 +1213,26 @@ async function sendReport(reason) {
             alert("Error sending report.");
         }
     } catch (e) { console.error(e); }
+}
+// --- PROFILE PHOTO UPLOAD ---
+function handlePhotoUpload(input) {
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        
+        reader.onload = function(e) {
+            // Мгновенное визуальное обновление (без анимаций сканирования)
+            const avatarEl = document.getElementById('profile-avatar-view');
+            avatarEl.style.backgroundImage = `url('${e.target.result}')`;
+            
+            // Здесь можно добавить логику отправки на сервер:
+            // uploadPhotoToServer(input.files[0]);
+            
+            // Тактильный отклик
+            if (window.Telegram && Telegram.WebApp.HapticFeedback) {
+                Telegram.WebApp.HapticFeedback.selectionChanged();
+            }
+        };
+        
+        reader.readAsDataURL(input.files[0]);
+    }
 }
