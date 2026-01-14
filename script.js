@@ -348,6 +348,64 @@ function handlePhaseChange(phase) {
     }
 }
 
+function triggerAvatarAnim(wrapper, type) {
+    if (!wrapper) return;
+    
+    // 1. Clean previous animations
+    wrapper.classList.remove('anim-tap', 'anim-heart', 'anim-spy', 'anim-xray');
+    wrapper.querySelectorAll('.fx-container').forEach(el => el.remove()); // Cleanup old FX
+    
+    // Create a container for temporary FX elements
+    const fxContainer = document.createElement('div');
+    fxContainer.className = 'fx-container';
+    wrapper.appendChild(fxContainer);
+
+    // 2. Apply Effect
+    if (type === 'tap') {
+        wrapper.classList.add('anim-tap');
+        const ripple = document.createElement('div');
+        ripple.className = 'fx-ripple';
+        fxContainer.appendChild(ripple);
+    }
+    else if (type === 'heart') {
+        wrapper.classList.add('anim-heart');
+        const emojis = ['❤️', '💖', '🔥', '😍'];
+        for(let i=0; i<6; i++) {
+            const p = document.createElement('div');
+            p.className = 'fx-heart-particle';
+            p.innerText = emojis[Math.floor(Math.random()*emojis.length)];
+            // Random scatter math
+            p.style.setProperty('--tx', (Math.random()*100 - 50) + 'px'); 
+            p.style.animationDelay = (Math.random()*0.3) + 's';
+            fxContainer.appendChild(p);
+        }
+    }
+    else if (type === 'spy') {
+        wrapper.classList.add('anim-spy');
+        const radar = document.createElement('div');
+        radar.className = 'fx-radar-sweep';
+        fxContainer.appendChild(radar);
+    }
+    else if (type === 'xray') {
+        wrapper.classList.add('anim-xray');
+        // Clone image for RGB shift effect
+        const avatarDiv = wrapper.querySelector('.avatar');
+        if (avatarDiv) {
+            const bgImage = avatarDiv.style.backgroundImage;
+            const r = document.createElement('div'); r.className = 'fx-rgb red'; r.style.backgroundImage = bgImage;
+            const b = document.createElement('div'); b.className = 'fx-rgb blue'; b.style.backgroundImage = bgImage;
+            fxContainer.appendChild(r);
+            fxContainer.appendChild(b);
+        }
+    }
+
+    // 3. Cleanup after animation (1.5s safety)
+    setTimeout(() => {
+        wrapper.classList.remove('anim-tap', 'anim-heart', 'anim-spy', 'anim-xray');
+        fxContainer.remove();
+    }, 1500);
+}
+
 function renderPlayers(players, phase) {
     const women = players.filter(p => p.gender === 'female');
     const men = players.filter(p => p.gender === 'male');
@@ -400,11 +458,17 @@ function renderPlayers(players, phase) {
 
         card.onclick = () => {
             if (selectedGiftType) { sendGiftToPlayer(p, selectedGiftType); return; }
+            
+            // --- NEW: Trigger Tap Animation ---
+            const wrapper = card.querySelector('.avatar-wrapper');
+            triggerAvatarAnim(wrapper, 'tap');
+            // ----------------------------------
+        
             if (isMe) return;
             if (phase === 'listening' && p.has_answer) activateSpotlight(p);
             if (phase === 'voting') castVote(p);
             if (phase === 'results') {
-                 openStoicModal(p);
+                    openStoicModal(p);
             }
         };
 
@@ -552,13 +616,14 @@ async function sendGiftToPlayer(player, type) {
             
             const card = document.getElementById(`player-${player.id}`);
             if (card) {
-                const fxClass = `fx-${type}`;
-                card.classList.add(fxClass);
-                setTimeout(() => card.classList.remove(fxClass), 3000);
+                // --- NEW: Trigger Gift Animation ---
+                const wrapper = card.querySelector('.avatar-wrapper');
+                triggerAvatarAnim(wrapper, type);
+                // -----------------------------------
             }
-
+        
             if (type === 'spy') {
-                setTimeout(() => openProfileModal(player.photo), 500);
+                setTimeout(() => openProfileModal(player.photo), 1400); // Delay slightly for animation
             }
             else if (type === 'xray') {
                 isXrayActive = true;

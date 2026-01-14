@@ -290,10 +290,14 @@ body {
     width: 70px; height: 70px; border-radius: 20px; position: relative;
     background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1);
     transition: all 0.3s ease; display: flex; align-items: center; justify-content: center;
+    /* UPDATED FOR ANIMATIONS */
+    overflow: visible !important; 
 }
 .avatar {
     width: 100%; height: 100%; border-radius: 20px; background-size: cover; background-position: center;
     opacity: 0.7; transition: all 0.3s ease;
+    /* UPDATED FOR ANIMATIONS */
+    z-index: 2; position: relative;
 }
 .name-tag {
     margin-top: 8px; font-size: 13px; font-weight: 600; color: rgba(255, 255, 255, 0.5);
@@ -772,16 +776,6 @@ body {
     font-family: 'Orbitron', sans-serif; letter-spacing: 1px;
 }
 
-/* --- FX ANIMATIONS --- */
-.fx-heart .avatar-wrapper { animation: heartbeat 1s infinite; border-color: var(--color-heart); box-shadow: 0 0 20px var(--color-heart); }
-@keyframes heartbeat { 0% { transform: scale(1); } 25% { transform: scale(1.1); } 40% { transform: scale(1); } 60% { transform: scale(1.1); } 100% { transform: scale(1); } }
-
-.fx-spy .avatar-wrapper { animation: spy-scan 1s ease-in-out; border-color: var(--color-spy); }
-@keyframes spy-scan { 0% { filter: brightness(1); } 50% { filter: invert(1); } 100% { filter: brightness(1); } }
-
-.fx-xray .avatar-wrapper { animation: xray-flash 1s infinite alternate; border-color: var(--color-xray); box-shadow: 0 0 30px var(--color-xray); }
-@keyframes xray-flash { from { opacity: 1; } to { opacity: 0.7; } }
-
 /* ========================================= */
 /* COMPACT GIFT BAR (UPDATED) */
 /* ========================================= */
@@ -849,3 +843,59 @@ body {
     cursor: pointer;
     margin-left: 5px;
 }
+
+/* --- IMPACT ANIMATIONS (NEW) --- */
+
+/* 1. TAP RIPPLE */
+.anim-tap .avatar { animation: tapPulse 0.4s ease-out; }
+.fx-ripple {
+    position: absolute; inset: -5px; border: 2px solid var(--gold); border-radius: 50%;
+    animation: rippleExpand 0.5s ease-out forwards; pointer-events: none; z-index: 1;
+}
+@keyframes rippleExpand { 0% { transform: scale(1); opacity: 0.8; } 100% { transform: scale(1.5); opacity: 0; } }
+@keyframes tapPulse { 50% { transform: scale(0.95); } }
+
+/* 2. HEART (PULSE) */
+.anim-heart .avatar { animation: heartBeat 0.8s cubic-bezier(0.36, 0, 0.66, -0.56); }
+@keyframes heartBeat { 
+    0%, 100% { transform: scale(1); filter: brightness(1); }
+    15% { transform: scale(1.15); filter: brightness(1.5) sepia(1) hue-rotate(-50deg) saturate(3); box-shadow: 0 0 30px var(--color-heart); } 
+    30% { transform: scale(0.95); }
+    45% { transform: scale(1.1); }
+}
+.fx-heart-particle {
+    position: absolute; font-size: 24px; pointer-events: none; z-index: 10;
+    animation: floatUp 1s ease-out forwards; left: 50%; top: 50%;
+}
+@keyframes floatUp { 0% { transform: translate(-50%, -50%) scale(0); opacity: 0; } 20% { opacity: 1; } 100% { transform: translate(var(--tx), -100px) scale(1.2); opacity: 0; } }
+
+/* 3. SPY (FLUID RADAR) */
+.anim-spy .avatar { animation: spyScan 1.4s ease-in-out; }
+@keyframes spyScan { 0%, 100% { filter: brightness(1); } 50% { filter: brightness(1.5) hue-rotate(90deg) saturate(2); } }
+
+.fx-radar-sweep {
+    position: absolute; left: 50%; top: 50%; width: 150%; height: 150%;
+    background: conic-gradient(from 0deg, transparent 0deg, transparent 270deg, var(--neon-green) 360deg);
+    transform: translate(-50%, -50%); border-radius: 50%; opacity: 0.6;
+    animation: radarRotate 1.2s linear forwards; pointer-events: none; z-index: 3; mix-blend-mode: screen;
+}
+@keyframes radarRotate { from { transform: translate(-50%, -50%) rotate(0deg); opacity: 0; } to { transform: translate(-50%, -50%) rotate(360deg); opacity: 0; } }
+
+/* 4. X-RAY (GLITCH RGB) */
+.anim-xray .avatar { animation: glitchTear 0.6s steps(8); opacity: 0.5; }
+@keyframes glitchTear { 
+    0%, 100% { transform: translate(0); } 
+    20% { transform: translate(-5px, 2px); } 
+    40% { transform: translate(5px, -2px); } 
+    60% { transform: translate(-3px, 3px); } 
+}
+
+.fx-rgb {
+    position: absolute; inset: 0; border-radius: 20px; background-size: cover; background-position: center;
+    pointer-events: none; mix-blend-mode: screen; z-index: 3; opacity: 0.8;
+}
+.fx-rgb.red { animation: rgbShiftRed 0.6s steps(5) forwards; filter: hue-rotate(-50deg) saturate(5); }
+.fx-rgb.blue { animation: rgbShiftBlue 0.6s steps(5) forwards; filter: hue-rotate(180deg) saturate(5); }
+
+@keyframes rgbShiftRed { 0% { transform: translate(0); opacity: 0; } 20% { transform: translate(-10px, 0); opacity: 1; } 100% { transform: translate(0); opacity: 0; } }
+@keyframes rgbShiftBlue { 0% { transform: translate(0); opacity: 0; } 20% { transform: translate(10px, 0); opacity: 1; } 100% { transform: translate(0); opacity: 0; } }
