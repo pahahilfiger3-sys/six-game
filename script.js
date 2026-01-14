@@ -85,11 +85,11 @@ const profileImg = document.getElementById('profile-large-img');
 const gameBottomSheet = document.getElementById('game-bottom-sheet');
 const giftModal = document.getElementById('gift-modal');
 
-// --- GIFT CONFIGURATION (NO JOKER) ---
+// --- GIFT CONFIGURATION (NO EMOJIS) ---
 const GIFT_DESCRIPTIONS = {
-    'heart': "❤️ LIKE: Tap a player to send",
-    'spy': "👁 SPY: Tap a player to reveal photo",
-    'xray': "☢️ X-RAY: Tap a player to reveal all"
+    'heart': "LIKE: Tap a player to send",
+    'spy': "SPY: Tap a player to reveal photo",
+    'xray': "X-RAY: Tap a player to reveal all"
 };
 
 const GIFT_ICONS = {
@@ -176,7 +176,7 @@ async function startSearching() {
             
             if (data.status === 'error' && data.msg === 'BANNED') {
                 clearInterval(searchInterval);
-                alert("⛔️ ВЫ ЗАБАНЕНЫ!");
+                alert("BANNED");
                 forceExit();
                 return;
             }
@@ -219,7 +219,7 @@ async function loadProfile() {
             
             myName = u.name;
         } else if (data.msg === 'BANNED') {
-            alert("⛔️ ВЫ ЗАБАНЕНЫ!");
+            alert("BANNED");
         }
     } catch (e) { console.error(e); }
 }
@@ -262,7 +262,7 @@ async function saveProfile() {
             myGender = tempGender;
             myName = name;
             tg.HapticFeedback.notificationOccurred('success');
-            alert("Profile Saved ✅");
+            alert("Profile Saved");
         } else {
             alert("Error saving profile");
         }
@@ -316,34 +316,36 @@ function updateGame(data) {
 
 function handlePhaseChange(phase) {
     const btns = document.querySelectorAll('.action-btn');
+    const statusText = document.getElementById('game-status-text');
     resetSVG();
     
     // Reset Spotlight UI
     stopPlayback();
 
+    // --- UPDATE STATUS TEXT (GREEN INSTRUCTIONS) ---
     if (phase === 'recording') {
+        statusText.innerText = "TAP MIC TO SPEAK";
         btns.forEach(b => b.classList.remove('disabled'));
     } else if (phase === 'listening') {
+        statusText.innerText = "TAP PLAYER TO LISTEN";
         if (isRecording) {
             isRecording = false;
             document.getElementById('mic-btn').classList.remove('recording');
             if(mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
         }
         btns.forEach(b => b.classList.add('disabled'));
-        // Enable Gift Button
         document.querySelector('.gift-menu-btn').classList.remove('disabled');
-        
-        // Show Hint in Listening Phase
-        document.getElementById('hint-text').style.display = 'block';
-    } else {
-        // Voting, Results
+    } else if (phase === 'voting') {
+        statusText.innerText = "TAP AVATAR TO VOTE";
         btns.forEach(b => b.classList.add('disabled'));
-        // Enable Gift Button in Voting/Results
         document.querySelector('.gift-menu-btn').classList.remove('disabled');
+        tg.HapticFeedback.notificationOccurred('warning');
+    } else if (phase === 'results') {
+        statusText.innerText = "MATCH RESULTS";
+        btns.forEach(b => b.classList.add('disabled'));
+        document.querySelector('.gift-menu-btn').classList.remove('disabled');
+        tg.HapticFeedback.notificationOccurred('success');
     }
-
-    if (phase === 'voting') tg.HapticFeedback.notificationOccurred('warning');
-    if (phase === 'results') tg.HapticFeedback.notificationOccurred('success');
 }
 
 function renderPlayers(players, phase) {
@@ -369,7 +371,6 @@ function renderPlayers(players, phase) {
         
         if (phase === 'voting' && p.gender === myGender && !isMe) card.style.opacity = "0.3";
         
-        // Add playing class if this player is currently speaking
         if (currentPlayerId === p.id) {
             card.classList.add('playing');
         }
@@ -403,7 +404,6 @@ function renderPlayers(players, phase) {
             if (phase === 'listening' && p.has_answer) activateSpotlight(p);
             if (phase === 'voting') castVote(p);
             if (phase === 'results') {
-                 // NEW: Open Stoic Modal
                  openStoicModal(p);
             }
         };
@@ -433,17 +433,21 @@ async function openTextInput() {
 // --- SPY MODAL & STOIC MODAL ---
 
 function openProfileModal(url) {
+    // Generic view for chat images
     if (!url) return;
     document.getElementById('profile-large-img').src = url;
-    // Clear actions for generic view
+    document.getElementById('stoic-name').innerText = "PROFILE VIEW";
+    document.getElementById('stoic-city').innerText = "";
     document.getElementById('modal-actions-container').innerHTML = '';
     document.getElementById('profile-modal').classList.add('active');
 }
 
 function openStoicModal(player) {
-    // 1. Set Image
-    const img = document.getElementById('profile-large-img');
-    img.src = player.photo;
+    // 1. Set Info
+    document.getElementById('profile-large-img').src = player.photo;
+    document.getElementById('stoic-name').innerText = player.name;
+    // If city/age is not available in game data, show generic or hide
+    document.getElementById('stoic-city').innerText = "PLAYER"; 
     
     // 2. Open Modal
     const modal = document.getElementById('profile-modal');
@@ -463,7 +467,7 @@ function openStoicModal(player) {
         // Mutual Match -> Write
         const btn = document.createElement('button');
         btn.className = 'stoic-btn btn-write';
-        btn.innerHTML = '💬 WRITE MESSAGE';
+        btn.innerText = 'WRITE MESSAGE';
         btn.onclick = () => {
              closeProfileModal();
              openChatWithUser(player.id, player.name, player.photo);
@@ -473,7 +477,7 @@ function openStoicModal(player) {
         // No Match (or one-sided) -> 2nd Chance
         const btn = document.createElement('button');
         btn.className = 'stoic-btn btn-chance';
-        btn.innerHTML = '⚡️ 2ND CHANCE (100 🪙)';
+        btn.innerText = '2ND CHANCE (100 COINS)';
         btn.onclick = () => {
             closeProfileModal();
             buySecondChance(player.id, player.name, player.photo);
@@ -511,7 +515,7 @@ function selectGift(type) {
     const iconContainer = document.querySelector('.sticky-icon');
     
     if (bar && title && iconContainer) {
-        title.innerText = type.toUpperCase() + " SELECTED";
+        title.innerText = type.toUpperCase();
         
         // Inject SVG
         iconContainer.innerHTML = `<svg viewBox="0 0 24 24">${GIFT_ICONS[type]}</svg>`;
@@ -591,7 +595,6 @@ async function castVote(player) {
 }
 
 function activateSpotlight(player) {
-    // [PROTECTION] If gift selected, send it and exit
     if (selectedGiftType) {
         sendGiftToPlayer(player, selectedGiftType);
         return; 
@@ -686,7 +689,6 @@ async function toggleRecording() {
 // --- SVG HELPERS ---
 
 function resetSVG() {
-    // UPDATED: Arrowhead match color to GOLD (#ffd700)
     svgLayer.innerHTML = `<defs>
         <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#00f3ff" /></marker>
         <marker id="arrowhead-match" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#ffd700" /></marker>
@@ -859,7 +861,6 @@ function renderMessages(messages) {
             div.className = 'msg-bubble msg-system';
             div.innerText = m.text;
         } else if (m.type === 'game_invite') {
-            // --- NEW GLASS DESIGN FOR INVITE ---
             div.className = 'glass-bubble';
             const isMe = m.sender_id === USER_ID;
             
@@ -1010,7 +1011,6 @@ async function pollSyncGame() {
             optionsContainer.innerHTML = "";
             data.question.options.forEach((optText, index) => {
                 const btn = document.createElement('button');
-                // --- NEW GLASS CLASS ---
                 btn.className = 'glass-opt-btn';
                 btn.innerText = optText;
                 btn.onclick = () => submitSyncAnswer(index);
@@ -1099,7 +1099,6 @@ async function reportUser() {
     
     let reason = null;
 
-    // Check if showPopup is available (Mobile)
     if (tg.showPopup) {
         tg.showPopup({
             title: 'Report User',
@@ -1116,7 +1115,6 @@ async function reportUser() {
             }
         });
     } else {
-        // Fallback for Desktop
         reason = prompt("Reason (Spam, Abuse, 18+):");
         if (reason) {
             await sendReport(reason);

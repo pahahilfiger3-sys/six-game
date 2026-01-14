@@ -1,7 +1,7 @@
 :root { 
     --neon-blue: #00f3ff; 
     --neon-pink: #ff00ff; 
-    --neon-green: #00ff88;
+    --neon-green: #00ff88; /* STRICT GREEN */
     --neon-purple: #b800ff;
     --bg-dark: #000000; 
     --gold: #ffd700; 
@@ -52,7 +52,7 @@ body {
     flex: 1;
     width: 100%;
     overflow-y: auto;
-    padding-bottom: 120px; /* Space for Bottom Nav */
+    padding-bottom: 120px; 
     -webkit-overflow-scrolling: touch;
 }
 
@@ -107,7 +107,7 @@ body {
 }
 .balance-amount { color: #ffd700; font-weight: 700; font-size: 18px; }
 
-/* --- NAVIGATION (Transparent Liquid) --- */
+/* --- NAVIGATION --- */
 .bottom-nav {
     position: absolute; bottom: 30px; width: 90%; height: 70px; left: 5%;
     background: transparent; border: 2px solid rgba(255, 200, 100, 0.2);
@@ -128,24 +128,6 @@ body {
     position: relative; z-index: 1; transition: fill 0.3s ease;
 }
 .nav-item.active .nav-icon { fill: #1a1510; }
-
-/* --- NAV FIXES --- */
-#screen-lobby .nav-item:nth-child(1)::before,
-#screen-chat-list .nav-item:nth-child(2)::before,
-#screen-shop .nav-item:nth-child(3)::before,
-#screen-profile .nav-item:nth-child(4)::before {
-    content: ''; position: absolute; inset: 0;
-    background: linear-gradient(135deg, #ffd700 0%, #b8860b 100%);
-    border-radius: 25px; z-index: 0;
-    transform: translateY(0);
-}
-
-#screen-lobby .nav-item:nth-child(1) .nav-icon,
-#screen-chat-list .nav-item:nth-child(2) .nav-icon,
-#screen-shop .nav-item:nth-child(3) .nav-icon,
-#screen-profile .nav-item:nth-child(4) .nav-icon {
-    fill: #1a1510;
-}
 
 /* --- SEARCH & PROCESSING --- */
 .processing-container {
@@ -175,9 +157,9 @@ body {
 .processing-subtext { font-size: 13px; color: #666; margin-top: 10px; letter-spacing: 1px; }
 @keyframes blink { from { opacity: 1; } to { opacity: 0.5; } }
 
-/* --- GAME SCREEN HEADER REFACTOR --- */
+/* --- GAME SCREEN HEADER --- */
 .game-header {
-    height: 180px; /* Increased height for content */
+    height: 180px;
     display: flex; flex-direction: column; 
     z-index: 10; padding: 20px 20px 0;
     background: linear-gradient(180deg, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0) 100%);
@@ -222,11 +204,20 @@ body {
     font-size: 16px; color: rgba(255, 255, 255, 0.9); font-weight: 600;
     line-height: 1.4;
 }
-.hint-text {
-    font-size: 11px; color: var(--neon-green); font-weight: 700; margin-top: 8px;
-    letter-spacing: 1px; text-transform: uppercase; animation: hint-blink 1.5s infinite;
+
+/* --- NEW STATUS TEXT (GREEN INSTRUCTIONS) --- */
+.status-dynamic {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 12px;
+    font-weight: 800;
+    color: var(--neon-green);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-top: 12px;
+    text-shadow: 0 0 10px rgba(0, 255, 136, 0.4);
+    animation: pulse-green 2s infinite;
 }
-@keyframes hint-blink { 0%, 100% { opacity: 0.4; } 50% { opacity: 1; } }
+@keyframes pulse-green { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
 
 /* Spotlight View */
 #spotlight-view {
@@ -283,15 +274,9 @@ body {
     pointer-events: none; z-index: 0;
 }
 .line-normal { stroke: var(--neon-blue); stroke-width: 2; opacity: 0.6; stroke-linecap: round; }
-
-/* UPDATED MATCH ARROW STYLE (GOLD & THIN) */
 .line-match {
-    stroke: #ffd700; /* Gold */
-    stroke-width: 2px; /* Thin */
-    opacity: 1;
-    stroke-linecap: round;
-    filter: drop-shadow(0 0 5px var(--gold)); /* Gold Glow */
-    stroke-dasharray: 10;
+    stroke: #ffd700; stroke-width: 2px; opacity: 1; stroke-linecap: round;
+    filter: drop-shadow(0 0 5px var(--gold)); stroke-dasharray: 10;
     animation: dash 1s linear infinite;
 }
 @keyframes dash { to { stroke-dashoffset: -20; } }
@@ -373,7 +358,6 @@ body {
     box-shadow: 0 0 30px rgba(255, 215, 0, 0.2);
 }
 
-/* NEW VERTICAL MODAL STYLES */
 .vertical-modal { width: 100%; display: flex; flex-direction: column; gap: 15px; }
 .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
 .modal-title { font-family: 'Orbitron', sans-serif; font-size: 18px; font-weight: 800; color: var(--gold); letter-spacing: 1px; }
@@ -398,7 +382,6 @@ body {
 .v-name { font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 14px; margin-bottom: 2px; }
 .v-desc { font-size: 11px; color: rgba(255,255,255,0.5); }
 .v-price { font-family: 'Orbitron', sans-serif; font-size: 14px; color: #fff; font-weight: 700; }
-
 
 /* --- CHAT LIST --- */
 .screen-title {
@@ -718,69 +701,75 @@ body {
 }
 .glass-btn:active { transform: scale(0.96); }
 
-/* --- STOIC FULLSCREEN MODAL --- */
+/* --- STOIC PREMIUM CARD MODAL --- */
 #profile-modal {
     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background: #000; z-index: 10000; display: none; 
+    background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(15px);
+    z-index: 10000; display: none; 
     align-items: center; justify-content: center;
 }
 #profile-modal.active { display: flex; }
 
-#profile-large-img { 
-    width: 100%; height: 100%; object-fit: cover; 
-    position: absolute; top: 0; left: 0; border: none; border-radius: 0; 
+.stoic-container {
+    width: 85%; max-width: 350px;
+    background: rgba(20, 20, 25, 0.95);
+    border: 1px solid rgba(255, 215, 0, 0.3);
+    border-radius: 30px;
+    padding: 25px;
+    display: flex; flex-direction: column; align-items: center;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.8);
 }
 
-.modal-gradient-overlay {
-    position: absolute; bottom: 0; left: 0; width: 100%; height: 50%;
-    background: linear-gradient(to top, rgba(0,0,0,0.9), transparent);
-    pointer-events: none; z-index: 1;
+.stoic-info { text-align: center; margin-bottom: 15px; }
+#stoic-name {
+    font-family: 'Orbitron', sans-serif; font-size: 22px; font-weight: 800;
+    color: var(--gold); letter-spacing: 2px; margin-bottom: 4px;
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+}
+#stoic-city {
+    font-family: 'Rajdhani', sans-serif; font-size: 14px; font-weight: 600;
+    color: rgba(255, 255, 255, 0.5); text-transform: uppercase; letter-spacing: 2px;
 }
 
-.modal-close { 
-    position: absolute; top: 20px; right: 20px; font-size: 30px; 
-    color: white; cursor: pointer; z-index: 10002; 
-    text-shadow: 0 0 10px rgba(0,0,0,0.5);
+.stoic-photo-frame {
+    width: 100%; aspect-ratio: 1/1;
+    border-radius: 20px;
+    border: 2px solid var(--gold);
+    overflow: hidden;
+    margin-bottom: 20px;
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.1);
+    background: #000;
 }
+#profile-large-img { width: 100%; height: 100%; object-fit: cover; }
 
-/* --- STOIC ACTION BAR --- */
 .stoic-action-bar {
-    position: absolute; bottom: 40px; left: 0; width: 100%;
-    display: flex; flex-direction: column; align-items: center; gap: 15px;
-    z-index: 10001; padding: 0 20px;
+    width: 100%; display: flex; flex-direction: column; gap: 10px;
 }
 
 .stoic-btn {
-    width: 100%; max-width: 320px; padding: 16px;
-    background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    width: 100%; padding: 14px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 16px;
     color: #fff;
     font-family: 'Orbitron', sans-serif;
     font-weight: 700;
-    font-size: 16px;
+    font-size: 14px;
     text-transform: uppercase;
     letter-spacing: 1px;
     cursor: pointer;
     transition: all 0.2s;
-    display: flex; align-items: center; justify-content: center; gap: 10px;
+    text-align: center;
 }
+.stoic-btn:active { background: rgba(255, 255, 255, 0.1); transform: scale(0.98); }
 
-.stoic-btn:active {
-    background: rgba(255, 255, 255, 0.2);
-    transform: scale(0.98);
-}
+.btn-write { border-color: var(--neon-blue); color: var(--neon-blue); box-shadow: 0 0 10px rgba(0, 243, 255, 0.1); }
+.btn-chance { border-color: var(--gold); color: var(--gold); box-shadow: 0 0 10px rgba(255, 215, 0, 0.1); }
 
-.btn-write {
-    border-color: var(--neon-blue);
-    box-shadow: 0 0 20px rgba(0, 243, 255, 0.2);
-}
-
-.btn-chance {
-    border-color: var(--gold);
-    box-shadow: 0 0 20px rgba(255, 215, 0, 0.2);
+.modal-close-btn {
+    margin-top: 15px;
+    font-size: 12px; color: #666; cursor: pointer;
+    font-family: 'Orbitron', sans-serif; letter-spacing: 1px;
 }
 
 /* --- FX ANIMATIONS --- */
@@ -794,24 +783,23 @@ body {
 @keyframes xray-flash { from { opacity: 1; } to { opacity: 0.7; } }
 
 /* ========================================= */
-/* STICKY GIFT BAR (UPDATED - DYNAMIC ISLAND) */
+/* COMPACT GIFT BAR (UPDATED) */
 /* ========================================= */
 
 .gift-sticky-bar {
     position: absolute;
-    bottom: 130px; /* UPDATED: Higher to clear nav */
+    bottom: 110px; /* Positioned above controls */
     left: 50%;
     transform: translateX(-50%);
-    width: auto; /* UPDATED: Auto width */
-    min-width: 220px; /* UPDATED */
-    background: rgba(10, 10, 10, 0.95); /* UPDATED: Blacker */
+    width: auto;
+    background: rgba(10, 10, 10, 0.95);
     border: 1px solid var(--gold);
-    border-radius: 50px; /* UPDATED: Pill shape */
-    padding: 8px 20px; /* UPDATED */
-    display: inline-flex; /* UPDATED */
+    border-radius: 50px; /* Capsule shape */
+    padding: 8px 20px;
+    display: inline-flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 15px;
+    justify-content: center;
+    gap: 12px;
     box-shadow: 0 0 20px rgba(255, 215, 0, 0.2);
     z-index: 900;
     opacity: 0;
@@ -819,58 +807,45 @@ body {
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Когда плашка активна */
 .gift-sticky-bar:not(.hidden) {
     opacity: 1;
-    bottom: 140px; /* Эффект всплытия */
+    bottom: 120px; /* Float up effect */
     pointer-events: all;
 }
 
-.sticky-left-side {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
+.sticky-left-side { display: flex; align-items: center; gap: 10px; }
 
 .sticky-icon {
-    width: 32px; height: 32px;
+    width: 24px; height: 24px;
     display: flex; align-items: center; justify-content: center;
-    filter: drop-shadow(0 0 5px currentColor);
 }
-.sticky-icon svg { width: 24px; height: 24px; }
+.sticky-icon svg { width: 20px; height: 20px; }
+
+.sticky-info { display: flex; flex-direction: column; justify-content: center; }
 
 .sticky-title {
     font-family: 'Orbitron', sans-serif;
     color: var(--gold);
-    font-size: 14px;
+    font-size: 12px;
     font-weight: 700;
     letter-spacing: 1px;
     text-transform: uppercase;
+    line-height: 1;
 }
 
 .sticky-hint {
     font-family: 'Rajdhani', sans-serif;
-    font-size: 12px;
+    font-size: 10px;
     color: rgba(255, 255, 255, 0.6);
+    text-transform: uppercase;
+    margin-top: 2px;
 }
 
-/* Кнопка Крестик */
 .sticky-close-btn {
-    width: 28px;
-    height: 28px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    width: 20px; height: 20px;
+    display: flex; align-items: center; justify-content: center;
     color: rgba(255, 255, 255, 0.5);
-    font-size: 16px;
-    border-radius: 50%;
+    font-size: 14px;
     cursor: pointer;
-    transition: 0.2s;
-    background: rgba(255, 255, 255, 0.05);
-}
-
-.sticky-close-btn:active {
-    background: rgba(255, 0, 85, 0.2);
-    color: #fff;
-    transform: scale(0.9);
+    margin-left: 5px;
 }
