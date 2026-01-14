@@ -382,9 +382,27 @@ function triggerAvatarAnim(wrapper, type) {
     }
     else if (type === 'spy') {
         wrapper.classList.add('anim-spy');
-        const radar = document.createElement('div');
-        radar.className = 'fx-radar-sweep';
-        fxContainer.appendChild(radar);
+        
+        // 1. Создаем контейнер для Spy эффектов
+        const spyContainer = document.createElement('div');
+        spyContainer.className = 'fx-spy-container';
+        
+        // 2. Создаем вращающийся луч (Radar Sweep)
+        const sweep = document.createElement('div');
+        sweep.className = 'fx-radar-sweep';
+        spyContainer.appendChild(sweep);
+        
+        // 3. Создаем кольца сонара (Sonar Rings)
+        const r1 = document.createElement('div');
+        r1.className = 'fx-sonar-ring sonar-1';
+        spyContainer.appendChild(r1);
+        
+        const r2 = document.createElement('div');
+        r2.className = 'fx-sonar-ring sonar-2';
+        spyContainer.appendChild(r2);
+        
+        // 4. Добавляем в основной контейнер эффектов
+        fxContainer.appendChild(spyContainer);
     }
     else if (type === 'xray') {
         wrapper.classList.add('anim-xray');
