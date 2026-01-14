@@ -104,6 +104,56 @@ const GIFT_COLORS = {
     'xray': 'var(--color-xray)'
 };
 
+// --- HELPER FUNCTIONS ---
+
+function updateLocalBalance(amount) {
+    const lobbyBal = document.getElementById('user-balance');
+    const profileBal = document.getElementById('profile-balance');
+    
+    if (lobbyBal) lobbyBal.innerText = amount + ' 🪙';
+    if (profileBal) profileBal.innerText = amount;
+}
+
+async function fetchUserData() {
+    try {
+        const res = await fetch(USER_GET_URL, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ user_id: USER_ID, name: myName })
+        });
+        const data = await res.json();
+        
+        if (data.status === 'success') {
+            const u = data.user;
+            
+            // Update Balance Everywhere
+            updateLocalBalance(u.balance);
+            
+            // Update Global State
+            myGender = u.gender;
+            myName = u.name;
+            tempGender = u.gender;
+            
+            // Update Profile UI Inputs (even if hidden)
+            const pKarma = document.getElementById('profile-karma');
+            if (pKarma) pKarma.innerText = u.karma + '%';
+            
+            const iName = document.getElementById('input-name');
+            const iAge = document.getElementById('input-age');
+            const iCity = document.getElementById('input-city');
+            
+            if (iName) iName.value = u.name;
+            if (iAge) iAge.value = u.age || '';
+            if (iCity) iCity.value = u.city || '';
+            
+            updateGenderToggleUI();
+            
+        } else if (data.msg === 'BANNED') {
+            alert("BANNED");
+        }
+    } catch (e) { console.error("Fetch User Error:", e); }
+}
+
 // --- NAVIGATION ---
 
 function switchScreen(screenName) {
@@ -111,7 +161,6 @@ function switchScreen(screenName) {
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     
     // 2. Показываем нужный экран
-    // ПРИМЕЧАНИЕ: Мы больше не трогаем .nav-item, так как они жестко прописаны в HTML
     if (screenName === 'lobby') screenLobby.classList.add('active');
     else if (screenName === 'chatList') screenChatList.classList.add('active');
     else if (screenName === 'chatRoom') screenChatRoom.classList.add('active');
@@ -186,31 +235,8 @@ async function loadProfile() {
     switchScreen('profile');
     document.getElementById('profile-avatar-view').style.backgroundImage = `url('${myPhoto || "https://via.placeholder.com/150"}')`;
     
-    try {
-        const res = await fetch(USER_GET_URL, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ user_id: USER_ID, name: myName })
-        });
-        const data = await res.json();
-        
-        if (data.status === 'success') {
-            const u = data.user;
-            document.getElementById('profile-balance').innerText = u.balance;
-            document.getElementById('profile-karma').innerText = u.karma + '%';
-            document.getElementById('input-name').value = u.name;
-            document.getElementById('input-age').value = u.age || '';
-            document.getElementById('input-city').value = u.city || '';
-            
-            myGender = u.gender;
-            tempGender = u.gender;
-            updateGenderToggleUI();
-            
-            myName = u.name;
-        } else if (data.msg === 'BANNED') {
-            alert("BANNED");
-        }
-    } catch (e) { console.error(e); }
+    // Fetch fresh data to populate inputs and balance
+    await fetchUserData();
 }
 
 function toggleGender(gender) {
@@ -619,7 +645,9 @@ async function sendGiftToPlayer(player, type) {
         
         if (data.status === 'success') {
             tg.HapticFeedback.notificationOccurred('success');
-            document.getElementById('user-balance').innerText = data.new_balance + ' 🪙';
+            
+            // Update Balance
+            updateLocalBalance(data.new_balance);
             
             const card = document.getElementById(`player-${player.id}`);
             if (card) {
@@ -881,7 +909,8 @@ async function restoreChat(chatId) {
         const data = await res.json();
         
         if (data.status === 'success') {
-            document.getElementById('user-balance').innerText = data.new_balance + ' 🪙';
+            // Update Balance
+            updateLocalBalance(data.new_balance);
             loadChatList('active'); 
         } else {
             alert(data.msg === 'No money' ? "Not enough coins!" : "Error");
@@ -1132,7 +1161,10 @@ async function buySecondChance(targetId, name, photo) {
 
         if (data.status === 'success') {
             tg.HapticFeedback.notificationOccurred('success');
-            document.getElementById('user-balance').innerText = data.new_balance + ' 🪙';
+            
+            // Update Balance
+            updateLocalBalance(data.new_balance);
+            
             forceExit(); 
             openChat(data.chat_id, name, photo, targetId);
         } else {
@@ -1236,3 +1268,7 @@ function handlePhotoUpload(input) {
         reader.readAsDataURL(input.files[0]);
     }
 }
+
+// --- INITIALIZATION ---
+// Fetch user data immediately on startup to sync balance and profile
+fetchUserData();
