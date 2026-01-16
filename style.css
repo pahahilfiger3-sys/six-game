@@ -901,10 +901,10 @@ body {
 @keyframes rgbShiftBlue { 0% { transform: translate(0); opacity: 0; } 20% { transform: translate(10px, 0); opacity: 1; } 100% { transform: translate(0); opacity: 0; } }
 
 /* =========================================
-   SPY FIX: ABSOLUTE SYNC (FINAL)
+   SPY FIX: COMPACT & REVERSED (FINAL)
    ========================================= */
 
-/* 1. РОДИТЕЛЬ: База для привязки */
+/* 1. РОДИТЕЛЬ (Обязательно relative) */
 .avatar-wrapper, 
 #my-avatar-wrapper,
 .profile-avatar-container {
@@ -913,47 +913,47 @@ body {
     z-index: 1;
 }
 
-/* 2. КОНТЕЙНЕР: Центр вращения */
+/* 2. КОНТЕЙНЕР: РОВНО ПО РАЗМЕРУ АВАТАРКИ */
 .fx-spy-container {
     position: absolute;
+    /* inset: 0 растягивает контейнер ровно по краям родителя (аватарки) */
+    inset: 0; 
+    width: 100%; 
+    height: 100%;
     
-    /* Прибиваем центр контейнера ровно к точке 0,0 (левый верхний угол) */
-    top: 0;
-    left: 0;
-    transform: translate(-50%, -50%);
+    /* Убираем лишние сдвиги, теперь всё четко по центру */
+    transform: none; 
     
-    /* Делаем его огромным, чтобы покрыть все фото */
-    width: 250%; 
-    height: 250%;
-    
-    /* УБИРАЕМ FLEX! Используем только absolute для слоев */
     display: block;
     pointer-events: none; 
     z-index: 10;
 }
 
-/* 3. ЛУЧ (РАДАР): Теперь он тоже absolute */
+/* 3. ВРАЩАЮЩИЙСЯ ЛУЧ (РАДАР) */
 .fx-radar-sweep {
-    position: absolute; /* Важно! */
-    inset: 0;           /* Растягиваем на весь контейнер */
+    position: absolute;
+    inset: 0;
     
-    /* Градиент с жестким центром */
-    background: conic-gradient(from 0deg, transparent 0deg, transparent 200deg, var(--neon-green) 360deg);
+    /* Градиент радара */
+    background: conic-gradient(from 0deg, transparent 0deg, transparent 270deg, var(--neon-green) 360deg);
     border-radius: 50%;
     opacity: 0.8; 
     mix-blend-mode: screen;
-    animation: radarSpin 1.5s linear infinite;
+    
+    /* scaleX(-1) - ЗЕРКАЛИТ направление градиента */
+    /* rotate(360deg) - вращает по часовой. Если нужно против - поставь -360deg */
+    animation: radarSpin 2s linear infinite;
+    transform: scaleX(-1); /* <--- ЭТА ШТУКА ДЕЛАЕТ ЗЕРКАЛЬНО */
 }
 
-/* 4. КОЛЬЦА: Тоже absolute */
+/* 4. КОЛЬЦА (SONAR) - Тоже компактные */
 .fx-sonar-ring {
     position: absolute;
-    inset: 0;          /* Растягиваем на весь контейнер */
-    
+    inset: 0;
     border: 2px solid var(--neon-green); 
     border-radius: 50%; 
     opacity: 0; 
-    box-shadow: 0 0 15px var(--neon-green);
+    box-shadow: 0 0 10px var(--neon-green); /* Чуть меньше свечение */
 }
 
 .sonar-1 { animation: sonarExpand 2s ease-out infinite; }
@@ -961,14 +961,14 @@ body {
 
 /* АНИМАЦИИ */
 @keyframes radarSpin { 
-    from { transform: rotate(0deg); } 
-    to { transform: rotate(360deg); } 
+    from { transform: scaleX(-1) rotate(0deg); } 
+    to { transform: scaleX(-1) rotate(360deg); } 
 }
 
 @keyframes sonarExpand { 
-    0% { transform: scale(0.1); opacity: 0; border-width: 5px; } 
+    0% { transform: scale(0.5); opacity: 0; border-width: 3px; } 
     20% { opacity: 1; }
-    100% { transform: scale(1); opacity: 0; border-width: 0px; } 
+    100% { transform: scale(1.0); opacity: 0; border-width: 0px; } 
 }
 
 /* --- PROFILE EDIT STYLES --- */
