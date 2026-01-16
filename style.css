@@ -900,66 +900,82 @@ body {
 @keyframes rgbShiftRed { 0% { transform: translate(0); opacity: 0; } 20% { transform: translate(-10px, 0); opacity: 1; } 100% { transform: translate(0); opacity: 0; } }
 @keyframes rgbShiftBlue { 0% { transform: translate(0); opacity: 0; } 20% { transform: translate(10px, 0); opacity: 1; } 100% { transform: translate(0); opacity: 0; } }
 
-/* --- SPY FIX: RADAR & SONAR (TOP-LEFT CORNER) --- */
+/* =========================================
+   SPY FIX: RADAR ANCHOR (TOP-LEFT)
+   ========================================= */
+
+/* 1. РОДИТЕЛЬ (ОБЯЗАТЕЛЬНО!) 
+   Без этого радар улетит в низ экрана. 
+   Мы форсируем это свойство для всех оберток аватаров. */
+.avatar-wrapper, 
+#my-avatar-wrapper,
+.profile-avatar-container {
+    position: relative !important; /* ГВОЗДЬ, который держит эффект */
+    overflow: hidden; /* Чтобы радар не вылезал на текст */
+    z-index: 1;
+}
+   
+   /* 2. КОНТЕЙНЕР РАДАРА 
+      Центр этого квадрата будет ровно в точке 0,0 родителя */
 .fx-spy-container {
     position: absolute;
-    /* 1. Ставим точку привязки в левый верхний угол родителя */
     top: 0;
     left: 0;
-    
-    /* 2. Сбрасываем старые отступы, если они были */
-    right: auto;
-    bottom: auto;
-    inset: auto; 
-
-    /* 3. Увеличиваем размер, чтобы луч доставал до противоположного угла */
-    width: 280%; 
-    height: 280%;
-
-    /* 4. Самое важное: Сдвигаем центр контейнера ровно на точку 0,0 */
+       
+       /* Делаем его огромным (300%), чтобы при вращении из угла он накрыл всё фото */
+    width: 300%; 
+    height: 300%;
+       
+       /* Смещаем центр контейнера в левый верхний угол родителя */
     transform: translate(-50%, -50%);
-
-    display: flex; 
-    align-items: center; 
+       
+    display: flex;
+    align-items: center;
     justify-content: center;
-    pointer-events: none; 
+    pointer-events: none;
     z-index: 10;
 }
-
-/* Зеленый вращающийся луч */
+   
+   /* 3. ВРАЩАЮЩИЙСЯ ЛУЧ */
 .fx-radar-sweep {
-    width: 100%; 
+    width: 100%;
     height: 100%;
-    /* Градиент луча */
-    background: conic-gradient(from 0deg, transparent 0deg, transparent 270deg, var(--neon-green) 360deg);
+       /* Градиент (луч) */
+    background: conic-gradient(from 0deg, transparent 0deg, transparent 200deg, var(--neon-green) 360deg);
     border-radius: 50%;
-    opacity: 0.8; 
+    opacity: 0.6;
     mix-blend-mode: screen;
-    animation: radarSpin 1.5s linear infinite;
+    animation: radarSpin 2s linear infinite;
 }
-
+   
+   /* 4. КРУГИ (SONAR) */
+.fx-sonar-ring {
+    position: absolute;
+    inset: 0;
+    border: 2px solid var(--neon-green);
+    border-radius: 50%;
+    opacity: 0;
+    box-shadow: 0 0 20px var(--neon-green);
+}
+   
+.sonar-1 { animation: sonarExpand 2.5s ease-out infinite; }
+.sonar-2 { animation: sonarExpand 2.5s ease-out 0.8s infinite; }
+   
+   /* АНИМАЦИИ */
 @keyframes radarSpin { 
     from { transform: rotate(0deg); } 
     to { transform: rotate(360deg); } 
 }
-
-/* Расходящиеся кольца */
-.fx-sonar-ring {
-    position: absolute; 
-    /* Кольца просто заполняют контейнер, который уже стоит где надо */
-    inset: 0; 
-    border: 2px solid var(--neon-green); 
-    border-radius: 50%; 
-    opacity: 0; 
-    box-shadow: 0 0 15px var(--neon-green);
+   
+@keyframes sonarExpand { 
+    0% { transform: scale(0.1); opacity: 0; border-width: 5px; } 
+    10% { opacity: 1; }
+    100% { transform: scale(1); opacity: 0; border-width: 0px; } 
 }
 
-.sonar-1 { animation: sonarExpand 2s ease-out infinite; }
-.sonar-2 { animation: sonarExpand 2s ease-out 0.6s infinite; }
-
 @keyframes sonarExpand { 
-    0% { transform: scale(0.1); opacity: 0; border-width: 4px; } 
-    20% { opacity: 1; }
+    0% { transform: scale(0.1); opacity: 0; border-width: 5px; } 
+    10% { opacity: 1; }
     100% { transform: scale(1); opacity: 0; border-width: 0px; } 
 }
 
